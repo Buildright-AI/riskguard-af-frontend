@@ -8,7 +8,6 @@ import { CollectionProvider } from "./components/contexts/CollectionContext";
 import { ConversationProvider } from "./components/contexts/ConversationContext";
 import { SocketProvider } from "./components/contexts/SocketContext";
 import { EvaluationProvider } from "./components/contexts/EvaluationContext";
-import StartDialog from "./components/dialog/StartDialog";
 import { ToastProvider } from "./components/contexts/ToastContext";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -34,8 +33,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Elysia",
-  description: "Your AI Platform",
+  title: "RiskGuard",
+  description: "AI Platform (Builrdight.ai)",
 };
 
 export default function RootLayout({
@@ -67,7 +66,6 @@ export default function RootLayout({
                               src="https://pixel.weaviate.cloud/a.png?x-pxid=32943cfc-5ae4-4f43-9f12-0c057a0b0df9"
                             /> */}
                               <SidebarTrigger className="lg:hidden flex text-secondary hover:text-primary hover:bg-foreground_alt z-50" />
-                              <StartDialog />
                               {children}
                             </main>
                           </SidebarProvider>

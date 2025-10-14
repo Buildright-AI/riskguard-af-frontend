@@ -7,7 +7,7 @@ import { SocketContext } from "../contexts/SocketContext";
 import { MdChatBubbleOutline } from "react-icons/md";
 import { GoDatabase } from "react-icons/go";
 import { AiOutlineExperiment } from "react-icons/ai";
-import { FaCircle, FaSquareXTwitter } from "react-icons/fa6";
+import { FaCircle } from "react-icons/fa6";
 import { MdOutlineSettingsInputComponent } from "react-icons/md";
 import { IoIosWarning } from "react-icons/io";
 
@@ -19,11 +19,6 @@ import { CgFileDocument } from "react-icons/cg";
 
 import { CgWebsite } from "react-icons/cg";
 import { IoNewspaperOutline } from "react-icons/io5";
-import { FaGithub } from "react-icons/fa";
-import { FaLinkedin } from "react-icons/fa";
-import { FaYoutube } from "react-icons/fa";
-
-import { RiRobot2Line } from "react-icons/ri";
 
 import { public_path } from "@/app/components/host";
 
@@ -115,12 +110,7 @@ const SidebarComponent: React.FC = () => {
       <SidebarHeader>
         <div className={`flex items-center gap-2 w-full justify-between p-2`}>
           <div className="flex items-center gap-2">
-            <img
-              src={`${public_path}logo.svg`}
-              alt="Elysia"
-              className="w-5 h-5 stext-primary"
-            />
-            <p className="text-sm font-bold text-primary">Elysia</p>
+            <p className="text-sm font-bold text-primary">RiskGuard</p>
           </div>
           <div className="flex items-center justify-center gap-1">
             {socketOnline ? (
@@ -189,33 +179,10 @@ const SidebarComponent: React.FC = () => {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              className="w-full justify-start items-center"
-              onClick={() => openNewTab("https://weaviate.github.io/elysia/")}
-            >
-              <CgFileDocument />
-              <span>Documentation</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="w-full justify-start items-center"
-              onClick={() => openNewTab("https://github.com/weaviate/elysia")}
-            >
-              <FaGithub />
-              <span>Github</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton>
-                  <img
-                    src={`${public_path}weaviate-logo.svg`}
-                    alt="Weaviate"
-                    className="w-4 h-4"
-                  />
-                  <p>Powered by Weaviate</p>
+                  <p>Powered by Buildright.ai</p>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -223,56 +190,22 @@ const SidebarComponent: React.FC = () => {
                 className="w-[--radix-popper-anchor-width]"
               >
                 <DropdownMenuItem
-                  onClick={() => openNewTab("https://weaviate.io/")}
+                  onClick={() => openNewTab("https://buildright.ai")}
                 >
                   <CgWebsite />
                   <span>Website</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://weaviate.io/product/query-agent")
-                  }
+                  onClick={() => openNewTab("https://buildright.ai")}
                 >
-                  <RiRobot2Line />
-                  <span>Weaviate Query Agent</span>
+                  <CgFileDocument />
+                  <span>Documentation</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => openNewTab("https://newsletter.weaviate.io/")}
+                  onClick={() => openNewTab("https://buildright.ai")}
                 >
                   <IoNewspaperOutline />
-                  <span>Newsletter</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://github.com/weaviate/weaviate")
-                  }
-                >
-                  <FaGithub />
-                  <span>GitHub</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab(
-                      "https://www.linkedin.com/company/weaviate-io/posts/?feedView=all"
-                    )
-                  }
-                >
-                  <FaLinkedin />
-                  <span>LinkedIn</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://x.com/weaviate_io")}
-                >
-                  <FaSquareXTwitter />
-                  <span>X</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://www.youtube.com/@Weaviate")
-                  }
-                >
-                  <FaYoutube />
-                  <span>YouTube</span>
+                  <span>Support</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
