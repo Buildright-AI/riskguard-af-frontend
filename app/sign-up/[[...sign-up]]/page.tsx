@@ -1,0 +1,24 @@
+"use client";
+
+import { SignUp } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+
+export default function Page() {
+  return (
+    <div className="flex items-center justify-center min-h-screen w-full bg-background">
+      <SignUp
+        appearance={{
+          baseTheme: dark,
+          variables: {
+            colorBackground: "#171717",
+            colorInputBackground: "#2d2d2d",
+            colorPrimary: "#5eb97e",
+            colorText: "#f2f2f2",
+            colorTextSecondary: "#808080",
+            colorNeutral: "#808080",
+          },
+        }}
+      />
+    </div>
+  );
+}

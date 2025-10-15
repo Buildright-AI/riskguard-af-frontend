@@ -10,6 +10,7 @@ import { AiOutlineExperiment } from "react-icons/ai";
 import { FaCircle } from "react-icons/fa6";
 import { MdOutlineSettingsInputComponent } from "react-icons/md";
 import { IoIosWarning } from "react-icons/io";
+import { IoLogOutOutline } from "react-icons/io5";
 
 import HomeSubMenu from "@/app/components/navigation/HomeSubMenu";
 import DataSubMenu from "@/app/components/navigation/DataSubMenu";
@@ -20,7 +21,8 @@ import { CgFileDocument } from "react-icons/cg";
 import { CgWebsite } from "react-icons/cg";
 import { IoNewspaperOutline } from "react-icons/io5";
 
-import { public_path } from "@/app/components/host";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import {
   Sidebar,
@@ -46,6 +48,7 @@ import SettingsSubMenu from "./SettingsSubMenu";
 import { RouterContext } from "../contexts/RouterContext";
 import { CollectionContext } from "../contexts/CollectionContext";
 import { SessionContext } from "../contexts/SessionContext";
+import { ToastContext } from "../contexts/ToastContext";
 import packageJson from "../../../package.json";
 
 const SidebarComponent: React.FC = () => {
@@ -53,6 +56,9 @@ const SidebarComponent: React.FC = () => {
   const { changePage, currentPage } = useContext(RouterContext);
   const { collections, loadingCollections } = useContext(CollectionContext);
   const { unsavedChanges } = useContext(SessionContext);
+  const { showConfirmModal } = useContext(ToastContext);
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   const [items, setItems] = useState<
     {
@@ -103,6 +109,17 @@ const SidebarComponent: React.FC = () => {
 
   const openNewTab = (url: string) => {
     window.open(url, "_blank");
+  };
+
+  const handleLogout = () => {
+    showConfirmModal(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      async () => {
+        await signOut();
+        window.location.reload();
+      }
+    );
   };
 
   return (
@@ -178,6 +195,30 @@ const SidebarComponent: React.FC = () => {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {user && (
+            <SidebarMenuItem>
+              <div className="flex items-center gap-3 px-2 py-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.imageUrl} alt={`${user.firstName} ${user.lastName}`} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary truncate">
+                    {user.firstName} {user.lastName}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-error transition-colors p-1"
+                  title="Sign out"
+                >
+                  <IoLogOutOutline className="h-5 w-5" />
+                </button>
+              </div>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
