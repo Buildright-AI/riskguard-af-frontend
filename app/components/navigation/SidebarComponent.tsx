@@ -21,8 +21,9 @@ import { CgFileDocument } from "react-icons/cg";
 import { CgWebsite } from "react-icons/cg";
 import { IoNewspaperOutline } from "react-icons/io5";
 
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser, useClerk, useOrganization } from "@clerk/nextjs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
 
 import {
   Sidebar,
@@ -59,6 +60,12 @@ const SidebarComponent: React.FC = () => {
   const { showConfirmModal } = useContext(ToastContext);
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { organization, isLoaded } = useOrganization();
+
+  console.log('[SidebarComponent] isLoaded:', isLoaded, 'organization:', organization);
+
+  // Wait for organization to load before checking admin
+  const isAdmin = isLoaded ? checkIsAdmin(organization) : false;
 
   const [items, setItems] = useState<
     {
@@ -72,40 +79,55 @@ const SidebarComponent: React.FC = () => {
   >([]);
 
   useEffect(() => {
-    const _items = [
+    // Always show Chat section
+    const _items: {
+      title: string;
+      mode: string[];
+      icon: React.ReactNode;
+      warning?: boolean;
+      loading?: boolean;
+      onClick: () => void;
+    }[] = [
       {
         title: "Chat",
         mode: ["chat"],
         icon: <MdChatBubbleOutline />,
         onClick: () => changePage("chat", {}, true, unsavedChanges),
       },
-      {
-        title: "Data",
-        mode: ["data", "collection"],
-        icon: !collections?.some((c) => c.processed === true) ? (
-          <IoIosWarning className="text-warning" />
-        ) : (
-          <GoDatabase />
-        ),
-        warning: !collections?.some((c) => c.processed === true),
-        loading: loadingCollections,
-        onClick: () => changePage("data", {}, true, unsavedChanges),
-      },
-      {
-        title: "Settings",
-        mode: ["settings", "elysia"],
-        icon: <MdOutlineSettingsInputComponent />,
-        onClick: () => changePage("settings", {}, true, unsavedChanges),
-      },
-      {
-        title: "Evaluation",
-        mode: ["eval", "feedback", "display"],
-        icon: <AiOutlineExperiment />,
-        onClick: () => changePage("eval", {}, true, unsavedChanges),
-      },
     ];
+
+    // Only add admin sections if user is admin
+    if (isAdmin) {
+      _items.push(
+        {
+          title: "Data",
+          mode: ["data", "collection"],
+          icon: !collections?.some((c) => c.processed === true) ? (
+            <IoIosWarning className="text-warning" />
+          ) : (
+            <GoDatabase />
+          ),
+          warning: !collections?.some((c) => c.processed === true),
+          loading: loadingCollections,
+          onClick: () => changePage("data", {}, true, unsavedChanges),
+        },
+        {
+          title: "Settings",
+          mode: ["settings", "elysia"],
+          icon: <MdOutlineSettingsInputComponent />,
+          onClick: () => changePage("settings", {}, true, unsavedChanges),
+        },
+        {
+          title: "Evaluation",
+          mode: ["eval", "feedback", "display"],
+          icon: <AiOutlineExperiment />,
+          onClick: () => changePage("eval", {}, true, unsavedChanges),
+        }
+      );
+    }
+
     setItems(_items);
-  }, [collections, unsavedChanges]);
+  }, [collections, unsavedChanges, isAdmin, changePage, loadingCollections]);
 
   const openNewTab = (url: string) => {
     window.open(url, "_blank");
@@ -183,13 +205,14 @@ const SidebarComponent: React.FC = () => {
         <Separator />
 
         {currentPage === "chat" && <HomeSubMenu />}
-        {(currentPage === "data" || currentPage === "collection") && (
+        {isAdmin && (currentPage === "data" || currentPage === "collection") && (
           <DataSubMenu />
         )}
-        {(currentPage === "eval" ||
-          currentPage === "feedback" ||
-          currentPage === "display") && <EvalSubMenu />}
-        {(currentPage === "settings" || currentPage === "elysia") && (
+        {isAdmin &&
+          (currentPage === "eval" ||
+            currentPage === "feedback" ||
+            currentPage === "display") && <EvalSubMenu />}
+        {isAdmin && (currentPage === "settings" || currentPage === "elysia") && (
           <SettingsSubMenu />
         )}
       </SidebarContent>

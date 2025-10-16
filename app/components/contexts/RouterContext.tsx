@@ -5,6 +5,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ToastContext } from "./ToastContext";
+import { useOrganization, useAuth } from "@clerk/nextjs";
+import { ADMIN_ONLY_PAGES, VALID_PAGES } from "@/lib/constants/adminPages";
+import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
+import { getCurrentParams, navigateToPage } from "@/lib/utils/routerUtils";
 
 export const RouterContext = createContext<{
   currentPage: string;
@@ -23,25 +27,17 @@ export const RouterProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentPage, setCurrentPage] = useState<string>("chat");
 
   const { showConfirmModal } = useContext(ToastContext);
-
+  const { isLoaded, orgId } = useAuth();
+  const { organization, isLoaded: orgLoaded } = useOrganization();
   const searchParams = useSearchParams();
 
-  const changePage = (
-    page: string,
-    params: Record<string, any> = {},
-    replace: boolean = false,
-    guarded: boolean = false
-  ) => {
-    if (guarded) {
-      showConfirmModal(
-        "Unsaved Changes",
-        "You have unsaved changes. Are you sure you want to leave this page? You will lose your changes.",
-        () => changePageFunction(page, params, replace)
-      );
-      return;
-    } else {
-      changePageFunction(page, params, replace);
-    }
+  const isLoading = !isLoaded || !orgLoaded;
+  const isAdmin = isLoading ? false : checkIsAdmin(organization);
+
+  const redirectToChat = () => {
+    const params = getCurrentParams(searchParams);
+    navigateToPage("chat", params, true);
+    setCurrentPage("chat");
   };
 
   const changePageFunction = (
@@ -49,75 +45,70 @@ export const RouterProvider = ({ children }: { children: React.ReactNode }) => {
     params: Record<string, any> = {},
     replace: boolean = false
   ) => {
-    let finalParams: Record<string, any>;
+    const finalParams = replace
+      ? params
+      : { ...getCurrentParams(searchParams), ...params };
 
-    if (replace) {
-      finalParams = { page, ...params };
-    } else {
-      const currentParams: Record<string, any> = {};
-      searchParams.forEach((value, key) => {
-        currentParams[key] = value;
-      });
-      finalParams = { ...currentParams, page, ...params };
+    navigateToPage(page, finalParams, replace);
+  };
+
+  const changePage = (
+    page: string,
+    params: Record<string, any> = {},
+    replace: boolean = false,
+    guarded: boolean = false
+  ) => {
+    // Check if page requires admin access
+    if (!isLoading && ADMIN_ONLY_PAGES.includes(page as any) && !isAdmin) {
+      showConfirmModal(
+        "Access Denied",
+        "You do not have permission to access this page. This page is only available to administrators.",
+        redirectToChat
+      );
+      return;
     }
 
-    const url = `/?${new URLSearchParams(finalParams).toString()}`;
-
-    if (replace) {
-      window.history.replaceState(null, "", url);
-    } else {
-      window.history.pushState(null, "", url);
+    if (guarded) {
+      showConfirmModal(
+        "Unsaved Changes",
+        "You have unsaved changes. Are you sure you want to leave this page? You will lose your changes.",
+        () => changePageFunction(page, params, replace)
+      );
+      return;
     }
-    //showSuccessToast("Page changed to " + url);
+
+    changePageFunction(page, params, replace);
   };
 
   useEffect(() => {
-    // Get page from URL parameter
+    // Don't validate pages while authorization is loading
+    if (isLoading) return;
+
     const pageParam = searchParams.get("page");
 
-    // If no page parameter exists, redirect to chat page
+    // If no page parameter exists, redirect to chat
     if (!pageParam) {
-      // Preserve any existing query parameters (like conversation)
-      const currentParams: Record<string, any> = {};
-      searchParams.forEach((value, key) => {
-        currentParams[key] = value;
-      });
-
-      // Add page=chat to the URL
-      const url = `/?${new URLSearchParams({ page: "chat", ...currentParams }).toString()}`;
-      window.history.replaceState(null, "", url);
-      setCurrentPage("chat");
+      redirectToChat();
       return;
     }
 
     // Validate page parameter against known pages
-    const validPages = [
-      "chat",
-      "data",
-      "collection",
-      "settings",
-      "eval",
-      "feedback",
-      "elysia",
-      "display",
-    ];
-    const validatedPage = validPages.includes(pageParam) ? pageParam : "chat";
+    const validatedPage = VALID_PAGES.includes(pageParam as any)
+      ? pageParam
+      : "chat";
 
-    // If invalid page, redirect to chat
-    if (pageParam !== validatedPage) {
-      const currentParams: Record<string, any> = {};
-      searchParams.forEach((value, key) => {
-        if (key !== "page") {
-          currentParams[key] = value;
-        }
-      });
+    // Check if user is trying to access admin-only page without permission
+    const isUnauthorizedAccess =
+      ADMIN_ONLY_PAGES.includes(validatedPage as any) && !isAdmin;
 
-      const url = `/?${new URLSearchParams({ page: "chat", ...currentParams }).toString()}`;
-      window.history.replaceState(null, "", url);
+    // Redirect to chat if invalid page or unauthorized access
+    if (pageParam !== validatedPage || isUnauthorizedAccess) {
+      redirectToChat();
+      return;
     }
 
     setCurrentPage(validatedPage);
-  }, [searchParams]);
+  }, [searchParams, isAdmin, isLoading]);
 
   return (
     <RouterContext.Provider
