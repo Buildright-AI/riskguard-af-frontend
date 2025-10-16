@@ -10,12 +10,17 @@ export default function Page() {
         appearance={{
           baseTheme: dark,
           variables: {
-            colorBackground: "#171717",
+            colorBackground: "#242424",
             colorInputBackground: "#2d2d2d",
             colorPrimary: "#5eb97e",
             colorText: "#f2f2f2",
             colorTextSecondary: "#808080",
             colorNeutral: "#808080",
+            borderRadius: "0.75rem",
+          },
+          elements: {
+            card: "shadow-xl border border-[rgba(128,128,128,0.15)]",
+            rootBox: "shadow-xl",
           },
         }}
       />
