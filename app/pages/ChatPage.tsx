@@ -192,7 +192,7 @@ export default function ChatPage() {
             />
           </div>
         </div>
-        <p className="text-primary text-xl shine">Loading Elysia...</p>
+        <p className="text-primary text-xl shine">Loading RiskGuard...</p>
       </div>
     );
   }

@@ -37,7 +37,7 @@ export const ProcessingProvider = ({
     } else {
       showErrorToast(
         "Error analyzing " + collection.name + "...",
-        "Connection to Elysia lost (Socket: " +
+        "Connection to RiskGuard lost (Socket: " +
           socket +
           ") (ID: " +
           user_id +

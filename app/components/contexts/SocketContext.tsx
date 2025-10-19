@@ -70,7 +70,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     localSocket.onopen = () => {
       setSocketOnline(true);
-      showSuccessToast("Connected to Elysia");
+      showSuccessToast("Connected to RiskGuard");
       if (process.env.NODE_ENV === "development") {
         console.log("Socket opened");
       }
@@ -95,7 +95,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setSocket(undefined);
       setAllConversationStatuses("");
       handleAllConversationsError();
-      showErrorToast("Connection to Elysia lost");
+      showErrorToast("Connection to RiskGuard lost");
     };
 
     localSocket.onclose = () => {
@@ -103,7 +103,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setAllConversationStatuses("");
       setSocket(undefined);
       handleAllConversationsError();
-      showErrorToast("Connection to Elysia lost");
+      showErrorToast("Connection to RiskGuard lost");
       if (process.env.NODE_ENV === "development") {
         console.log("Socket closed");
       }
