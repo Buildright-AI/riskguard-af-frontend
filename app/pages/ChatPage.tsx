@@ -25,6 +25,8 @@ import { useDebug } from "../components/debugging/useDebug";
 import RateLimitDialog from "../components/navigation/RateLimitDialog";
 import { IoRefresh } from "react-icons/io5";
 import { TbSettings } from "react-icons/tb";
+import { useOrganization } from "@clerk/nextjs";
+import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
 
 import {
   DropdownMenu,
@@ -63,6 +65,10 @@ export default function ChatPage() {
   const { getRandomPrompts, collections } = useContext(CollectionContext);
 
   const { fetchDebug } = useDebug(id || "");
+
+  // Check if user is admin - for conditional mode dropdown display
+  const { organization, isLoaded } = useOrganization();
+  const isAdmin = isLoaded ? checkIsAdmin(organization) : false;
 
   const [currentQuery, setCurrentQuery] = useState<{
     [key: string]: Query;
@@ -170,6 +176,13 @@ export default function ChatPage() {
     setMode("chat");
   }, [currentConversation]);
 
+  // Lock non-admin users to chat mode only
+  useEffect(() => {
+    if (isLoaded && !isAdmin && mode !== "chat") {
+      setMode("chat");
+    }
+  }, [isLoaded, isAdmin, mode]);
+
   useEffect(() => {
     if (collections.length > 0) {
       setRandomPrompts(getRandomPrompts(4));
@@ -201,54 +214,69 @@ export default function ChatPage() {
     <div className="flex flex-col w-full h-full items-center justify-start gap-3">
       <div className="flex w-full justify-start items-center lg:sticky z-20 top-0 lg:p-0 p-4 gap-5 bg-background">
         {currentConversation != null && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="bg-accent/10 hover:bg-accent/20 border-accent border">
-                {mode === "chat" ? (
-                  <>
-                    <BsChatFill size={14} className="text-accent" />
-                    <p className="text-accent">Chat</p>
-                  </>
-                ) : mode === "flow" ? (
-                  <>
-                    <RiFlowChart size={14} className="text-accent" />
-                    <p className="text-accent">Tree</p>
-                  </>
-                ) : mode === "debug" ? (
-                  <>
-                    <CgDebug size={14} className="text-accent" />
-                    <p className="text-accent">Debug</p>
-                  </>
-                ) : mode === "settings" ? (
-                  <>
-                    <TbSettings size={14} className="text-accent" />
-                    <p className="text-accent">Settings</p>
-                  </>
-                ) : null}
-                <LuChevronDown size={14} className="text-accent" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setMode("chat")}>
-                <BsChatFill size={14} />
-                Chat
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMode("flow")}>
-                <RiFlowChart size={14} />
-                Tree
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setMode("settings")}>
-                <TbSettings size={14} />
-                Settings
-              </DropdownMenuItem>
-              {process.env.NODE_ENV === "development" && (
-                <DropdownMenuItem onClick={() => setMode("debug")}>
-                  <CgDebug size={14} />
-                  Debug
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            {isAdmin ? (
+              // Admin users: Full dropdown menu with all modes
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="bg-accent/10 hover:bg-accent/20 border-accent border">
+                    {mode === "chat" ? (
+                      <>
+                        <BsChatFill size={14} className="text-accent" />
+                        <p className="text-accent">Chat</p>
+                      </>
+                    ) : mode === "flow" ? (
+                      <>
+                        <RiFlowChart size={14} className="text-accent" />
+                        <p className="text-accent">Tree</p>
+                      </>
+                    ) : mode === "debug" ? (
+                      <>
+                        <CgDebug size={14} className="text-accent" />
+                        <p className="text-accent">Debug</p>
+                      </>
+                    ) : mode === "settings" ? (
+                      <>
+                        <TbSettings size={14} className="text-accent" />
+                        <p className="text-accent">Settings</p>
+                      </>
+                    ) : null}
+                    <LuChevronDown size={14} className="text-accent" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setMode("chat")}>
+                    <BsChatFill size={14} />
+                    Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMode("flow")}>
+                    <RiFlowChart size={14} />
+                    Tree
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMode("settings")}>
+                    <TbSettings size={14} />
+                    Settings
+                  </DropdownMenuItem>
+                  {process.env.NODE_ENV === "development" && (
+                    <DropdownMenuItem onClick={() => setMode("debug")}>
+                      <CgDebug size={14} />
+                      Debug
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              // Non-admin users: Minimal chat icon only
+              <motion.div
+                className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent rounded-md"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <BsChatFill size={14} className="text-accent" />
+                <p className="text-accent text-sm">Chat</p>
+              </motion.div>
+            )}
+          </>
         )}
         <div className="flex gap-2 items-center justify-center fade-in">
           <p className="text-primary text-sm">
@@ -306,6 +334,7 @@ export default function ChatPage() {
               addDisplacement={addDisplacement}
               addDistortion={addDistortion}
               selectSettings={selectSettings}
+              isAdmin={isAdmin}
             />
           </div>
           {Object.keys(currentQuery).length === 0 && (
