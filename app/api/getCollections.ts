@@ -1,19 +1,15 @@
 import { CollectionPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { Collection } from "../types/objects";
 
 export async function getCollections(
-  user_id: string | null | undefined,
+  token?: string
 ): Promise<Collection[]> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return [];
-    }
-
-    const response = await fetch(`${host}/collections/${user_id}/list`, {
+    const response = await fetchWithAuth(`/collections/list`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      token,
     });
 
     if (!response.ok) {

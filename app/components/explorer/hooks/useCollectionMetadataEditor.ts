@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { patchCollectionMetadata } from "@/app/api/patchCollectionMetadata";
 import { Collection, MetadataNamedVector } from "@/app/types/objects";
 import { MetadataPayload } from "@/app/types/payloads";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 export interface UseCollectionMetadataEditorProps {
   collection: Collection | null;
-  id: string | null;
   collectionMetadata: MetadataPayload | null;
   metadataRows: {
     properties: { [key: string]: string };
@@ -65,11 +65,11 @@ export interface UseCollectionMetadataEditorReturn {
 
 export function useCollectionMetadataEditor({
   collection,
-  id,
   collectionMetadata,
   collectionDataProperties,
   reloadMetadata,
 }: UseCollectionMetadataEditorProps): UseCollectionMetadataEditorReturn {
+  const { getAuthToken } = useAuthenticatedFetch();
   // Summary editing
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState("");
@@ -85,12 +85,13 @@ export function useCollectionMetadataEditor({
     summaryDraft !== (collectionMetadata?.metadata.summary || "");
 
   const handleSaveSummary = async () => {
-    if (!collection || !id) return;
+    if (!collection) return;
     setSavingSummary(true);
     try {
-      await patchCollectionMetadata(id, collection.name, {
+      const token = await getAuthToken();
+      await patchCollectionMetadata(collection.name, {
         summary: summaryDraft,
-      });
+      }, token || undefined);
       setEditingSummary(false);
       await reloadMetadata();
     } finally {
@@ -193,12 +194,13 @@ export function useCollectionMetadataEditor({
     JSON.stringify(collectionMetadata?.metadata.mappings || {});
 
   const handleSaveMappings = async () => {
-    if (!collection || !id) return;
+    if (!collection) return;
     setSavingMappings(true);
     try {
-      await patchCollectionMetadata(id, collection.name, {
+      const token = await getAuthToken();
+      await patchCollectionMetadata(collection.name, {
         mappings: mappingsDraft,
-      });
+      }, token || undefined);
       setEditingMappings(false);
       await reloadMetadata();
     } finally {
@@ -238,7 +240,7 @@ export function useCollectionMetadataEditor({
     JSON.stringify(collectionMetadata?.metadata.named_vectors || {});
 
   const handleSaveNamedVectors = async () => {
-    if (!collection || !id) return;
+    if (!collection) return;
     setSavingNamedVectors(true);
     try {
       // Convert the object format to array format for the API
@@ -250,9 +252,10 @@ export function useCollectionMetadataEditor({
         })
       );
 
-      await patchCollectionMetadata(id, collection.name, {
+      const token = await getAuthToken();
+      await patchCollectionMetadata(collection.name, {
         named_vectors: namedVectorsArray,
-      });
+      }, token || undefined);
       setEditingNamedVectors(false);
       await reloadMetadata();
     } finally {

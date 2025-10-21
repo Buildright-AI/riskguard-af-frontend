@@ -1,35 +1,35 @@
 import { ConfigPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { BackendConfig, FrontendConfig } from "../types/objects";
 
 export async function saveConfig(
-  user_id: string | null | undefined,
   backend_config: BackendConfig | null,
   frontend_config: FrontendConfig | null,
-  default_config: boolean = true
+  default_config: boolean = true,
+  token?: string
 ): Promise<ConfigPayload> {
   const startTime = performance.now();
   try {
-    if (!user_id || !backend_config) {
+    if (!backend_config) {
       return {
-        error: "No user id or backend config",
+        error: "No backend config",
         config: null,
         frontend_config: null,
         warnings: [],
       };
     }
 
-    const response = await fetch(
-      `${host}/user/config/${user_id}/${backend_config.id}`,
+    const response = await fetchWithAuth(
+      `/user/config/${backend_config.id}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: backend_config.name,
           config: backend_config,
           frontend_config: frontend_config,
           default: default_config,
         }),
+        token,
       }
     );
 

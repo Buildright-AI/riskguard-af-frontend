@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { getCollectionData } from "@/app/api/getCollection";
 import { Collection } from "@/app/types/objects";
 import { CollectionDataPayload } from "@/app/types/payloads";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 interface UseCollectionDataProps {
   collection: Collection | null;
-  id: string | null;
 }
 
-export function useCollectionData({ collection, id }: UseCollectionDataProps) {
+export function useCollectionData({ collection }: UseCollectionDataProps) {
+  const { getAuthToken } = useAuthenticatedFetch();
   const [collectionData, setCollectionData] =
     useState<CollectionDataPayload | null>(null);
   const [ascending, setAscending] = useState(true);
@@ -20,7 +21,7 @@ export function useCollectionData({ collection, id }: UseCollectionDataProps) {
   const [loadingData, setLoadingData] = useState(false);
 
   const loadCollectionData = async () => {
-    if (!collection || !id) return;
+    if (!collection) return;
     setLoadingData(true);
     const filter_config = {
       type: "and",
@@ -36,15 +37,16 @@ export function useCollectionData({ collection, id }: UseCollectionDataProps) {
       setUsingQuery(false);
     }
 
+    const token = await getAuthToken();
     const data = await getCollectionData(
-      id,
       collection.name,
       page,
       pageSize,
       sortOn,
       ascending,
       filter_config,
-      query
+      query,
+      token || undefined
     );
     setCollectionData(data);
     setLoadingData(false);
@@ -53,7 +55,7 @@ export function useCollectionData({ collection, id }: UseCollectionDataProps) {
   useEffect(() => {
     loadCollectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, ascending, sortOn, collection, id]);
+  }, [page, pageSize, ascending, sortOn, collection]);
 
   return {
     collectionData,

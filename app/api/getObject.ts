@@ -1,20 +1,18 @@
 import { CollectionDataPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function getObject(
-  user_id: string,
   collection_name: string,
-  uuid: string
+  uuid: string,
+  token?: string
 ) {
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/collections/${user_id}/get_object/${collection_name}/${uuid}`,
+    const response = await fetchWithAuth(
+      `/collections/get_object/${collection_name}/${uuid}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        token,
       }
     );
 

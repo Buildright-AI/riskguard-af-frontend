@@ -4,15 +4,16 @@ import { isEqual } from "lodash";
 import { getTreeConfig } from "@/app/api/getTreeConfig";
 import { saveTreeConfig } from "@/app/api/saveTreeConfig";
 import { newTreeConfig } from "@/app/api/newTreeConfig";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 /**
  * Custom hook for managing tree-specific configuration state
  * Handles loading, saving, resetting tree configurations for specific conversations
  */
 export function useTreeConfigState(
-  user_id: string | null | undefined,
   conversation_id: string | null | undefined
 ) {
+  const { getAuthToken } = useAuthenticatedFetch();
   const [originalConfig, setOriginalConfig] = useState<BackendConfig | null>(
     null
   );
@@ -24,14 +25,15 @@ export function useTreeConfigState(
 
   // Fetch tree configuration from API
   const fetchTreeConfig = async () => {
-    if (!user_id || !conversation_id) {
+    if (!conversation_id) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const data = await getTreeConfig(user_id, conversation_id);
+      const token = await getAuthToken();
+      const data = await getTreeConfig(conversation_id, token || undefined);
       if (data.config) {
         setOriginalConfig(data.config);
         setCurrentConfig({ ...data.config });
@@ -47,10 +49,11 @@ export function useTreeConfigState(
   // Save current configuration
   const handleSaveConfig = async () => {
     if (currentConfig) {
+      const token = await getAuthToken();
       const data = await saveTreeConfig(
-        user_id,
         conversation_id,
-        currentConfig
+        currentConfig,
+        token || undefined
       );
       if (data.config) {
         setOriginalConfig({ ...data.config });
@@ -62,7 +65,8 @@ export function useTreeConfigState(
 
   // Reset configuration to default
   const resetConfig = async () => {
-    const data = await newTreeConfig(user_id, conversation_id);
+    const token = await getAuthToken();
+    const data = await newTreeConfig(conversation_id, token || undefined);
     if (data.config) {
       setOriginalConfig({ ...data.config });
       setCurrentConfig({ ...data.config });
@@ -122,7 +126,7 @@ export function useTreeConfigState(
   // Effect to fetch config when dependencies change
   useEffect(() => {
     fetchTreeConfig();
-  }, [user_id, conversation_id]);
+  }, [conversation_id]);
 
   // Effect to track changes
   useEffect(() => {

@@ -51,7 +51,7 @@ const AbstractSphereScene = dynamic(
 
 export default function ChatPage() {
   const { sendQuery, socketOnline } = useContext(SocketContext);
-  const { id, showRateLimitDialog } = useContext(SessionContext);
+  const { showRateLimitDialog } = useContext(SessionContext);
   const {
     changeBaseToQuery,
     addTreeToConversation,
@@ -64,7 +64,7 @@ export default function ChatPage() {
 
   const { getRandomPrompts, collections } = useContext(CollectionContext);
 
-  const { fetchDebug } = useDebug(id || "");
+  const { fetchDebug } = useDebug();
 
   // Check if user is admin - for conditional mode dropdown display
   const { organization, isLoaded } = useOrganization();
@@ -113,7 +113,6 @@ export default function ChatPage() {
       return;
     } else {
       sendQuery(
-        id || "",
         trimmedQuery,
         _conversation.id,
         query_id,
@@ -460,7 +459,6 @@ export default function ChatPage() {
         />
       ) : mode === "settings" ? (
         <TreeSettingsView
-          user_id={id || ""}
           conversation_id={currentConversation || ""}
           selectChat={selectChat}
         />

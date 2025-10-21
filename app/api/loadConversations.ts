@@ -1,11 +1,12 @@
 import { SavedConversationPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
-export async function loadConversations(user_id: string) {
+export async function loadConversations(token?: string) {
   const startTime = performance.now();
   try {
-    const response = await fetch(`${host}/db/${user_id}/saved_trees`, {
+    const response = await fetchWithAuth(`/db/saved_trees`, {
       method: "GET",
+      token,
     });
 
     if (!response.ok) {

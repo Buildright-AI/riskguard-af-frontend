@@ -17,7 +17,8 @@ import { createConfig } from "@/app/api/createConfig";
 import { loadConfig } from "@/app/api/loadConfig";
 import { deleteConfig } from "@/app/api/deleteConfig";
 import { ToastContext } from "./ToastContext";
-import { useDeviceId } from "@/app/getDeviceId";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { useOrganization } from "@clerk/nextjs";
 
 export const SessionContext = createContext<{
   mode: string;
@@ -29,14 +30,10 @@ export const SessionContext = createContext<{
   fetchCurrentConfig: () => void;
   configIDs: ConfigListEntry[];
   updateConfig: (config: UserConfig, setDefault: boolean) => void;
-  handleCreateConfig: (user_id: string) => void;
-  getConfigIDs: (user_id: string) => void;
-  handleLoadConfig: (user_id: string, config_id: string) => void;
-  handleDeleteConfig: (
-    user_id: string,
-    config_id: string,
-    selectedConfig: boolean
-  ) => void;
+  handleCreateConfig: () => void;
+  getConfigIDs: () => void;
+  handleLoadConfig: (config_id: string) => void;
+  handleDeleteConfig: (config_id: string, selectedConfig: boolean) => void;
   loadingConfig: boolean;
   loadingConfigs: boolean;
   correctSettings: CorrectSettings | null;
@@ -87,7 +84,11 @@ export const SessionProvider = ({
 
   const [showRateLimitDialog, setShowRateLimitDialog] =
     useState<boolean>(false);
-  const id = useDeviceId();
+
+  // Use Clerk authentication instead of device fingerprint
+  const { userId, getAuthToken } = useAuthenticatedFetch();
+  const id = userId; // Keep id for backward compatibility with existing code
+  const { isLoaded: orgLoaded } = useOrganization();
   const [userConfig, setUserConfig] = useState<UserConfig | null>(null);
   const [configIDs, setConfigIDs] = useState<ConfigListEntry[]>([]);
   const [correctSettings, setCorrectSettings] =
@@ -111,13 +112,11 @@ export const SessionProvider = ({
     setFetchConversationFlag((prev) => !prev);
   };
 
-  const getConfigIDs = async (user_id: string) => {
+  const getConfigIDs = async () => {
     setLoadingConfigs(true);
     setConfigIDs([]);
-    if (!user_id) {
-      return;
-    }
-    const configList = await getConfigList(user_id);
+    const token = await getAuthToken();
+    const configList = await getConfigList(token || undefined);
 
     if (configList.error) {
       showErrorToast("Failed to Load Configuration List", configList.error);
@@ -138,10 +137,8 @@ export const SessionProvider = ({
 
   const fetchCurrentConfig = async () => {
     setLoadingConfig(true);
-    if (!id) {
-      return;
-    }
-    const config = await getConfig(id);
+    const token = await getAuthToken();
+    const config = await getConfig(token || undefined);
     if (config.error) {
       console.error(config.error);
       showErrorToast("Failed to Load Configuration", config.error);
@@ -159,9 +156,9 @@ export const SessionProvider = ({
   };
 
   useEffect(() => {
-    if (initialized.current || !id) return;
+    if (initialized.current || !id || !orgLoaded) return;
     initUser();
-  }, [id]);
+  }, [id, orgLoaded]);
 
   useEffect(() => {
     if (pathname === "/") {
@@ -183,31 +180,48 @@ export const SessionProvider = ({
   }, [pathname]);
 
   const initUser = async () => {
-    if (!id) {
-      return;
-    }
-    const user_object = await initializeUser(id);
+    const token = await getAuthToken();
     setLoadingConfig(true);
 
-    if (user_object.error) {
-      console.error(user_object.error);
-      showErrorToast("Failed to Initialize User", user_object.error);
-      return;
-    }
+    try {
+      // Add 10 second timeout to prevent indefinite hanging
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("API request timed out after 10 seconds")), 10000)
+      );
 
-    if (process.env.NODE_ENV === "development") {
-      console.log("Initialized user with id: " + id);
-    }
+      const user_object = await Promise.race([
+        initializeUser(token || undefined),
+        timeoutPromise,
+      ]);
 
-    getConfigIDs(id);
-    setUserConfig({
-      backend: user_object.config,
-      frontend: user_object.frontend_config,
-    });
-    setCorrectSettings(user_object.correct_settings);
-    setLoadingConfig(false);
-    showSuccessToast("User Initialized");
-    initialized.current = true;
+      if (user_object.error) {
+        console.error(user_object.error);
+        showErrorToast("Failed to Initialize User", user_object.error);
+        setLoadingConfig(false);
+        return;
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("Initialized user with id: " + id);
+      }
+
+      getConfigIDs();
+      setUserConfig({
+        backend: user_object.config,
+        frontend: user_object.frontend_config,
+      });
+      setCorrectSettings(user_object.correct_settings);
+      setLoadingConfig(false);
+      showSuccessToast("User Initialized");
+      initialized.current = true;
+    } catch (error) {
+      console.error("[SessionContext] initUser error:", error);
+      showErrorToast(
+        "Failed to Initialize User",
+        error instanceof Error ? error.message : "Unknown error occurred"
+      );
+      setLoadingConfig(false);
+    }
   };
 
   const enableRateLimitDialog = () => {
@@ -220,11 +234,12 @@ export const SessionProvider = ({
   ) => {
     setLoadingConfig(true);
     setSavingConfig(true);
+    const token = await getAuthToken();
     const response: ConfigPayload = await saveConfig(
-      id,
       config.backend,
       config.frontend,
-      setDefault
+      setDefault,
+      token || undefined
     );
     if (response.error) {
       console.error(response.error);
@@ -243,19 +258,20 @@ export const SessionProvider = ({
       backend: response.config,
       frontend: response.frontend_config,
     });
-    getConfigIDs(id || "");
+    getConfigIDs();
     setLoadingConfig(false);
     triggerFetchCollection();
     triggerFetchConversation();
     setSavingConfig(false);
   };
 
-  const handleLoadConfig = async (user_id: string, config_id: string) => {
-    if (!user_id || !config_id) {
+  const handleLoadConfig = async (config_id: string) => {
+    if (!config_id) {
       return;
     }
     setLoadingConfig(true);
-    const response: ConfigPayload = await loadConfig(user_id, config_id);
+    const token = await getAuthToken();
+    const response: ConfigPayload = await loadConfig(config_id, token || undefined);
     if (response.error) {
       console.error(response.error);
       showErrorToast("Failed to Load Configuration", response.error);
@@ -272,12 +288,10 @@ export const SessionProvider = ({
     setLoadingConfig(false);
   };
 
-  const handleCreateConfig = async (user_id: string) => {
-    if (!user_id) {
-      return;
-    }
+  const handleCreateConfig = async () => {
     setLoadingConfig(true);
-    const response: ConfigPayload = await createConfig(user_id);
+    const token = await getAuthToken();
+    const response: ConfigPayload = await createConfig(token || undefined);
     if (response.error) {
       console.error(response.error);
       showErrorToast("Failed to Create Configuration", response.error);
@@ -311,20 +325,20 @@ export const SessionProvider = ({
       backend: response.config,
       frontend: response.frontend_config,
     });
-    getConfigIDs(user_id);
+    getConfigIDs();
     setLoadingConfig(false);
   };
 
   const handleDeleteConfig = async (
-    user_id: string,
     config_id: string,
     selectedConfig: boolean
   ) => {
-    if (!user_id || !config_id) {
+    if (!config_id) {
       return;
     }
     setLoadingConfig(true);
-    const response: BasePayload = await deleteConfig(user_id, config_id);
+    const token = await getAuthToken();
+    const response: BasePayload = await deleteConfig(config_id, token || undefined);
     if (response.error) {
       console.error(response.error);
       showErrorToast("Failed to Delete Configuration", response.error);
@@ -339,13 +353,13 @@ export const SessionProvider = ({
           (config) => config.config_id !== config_id
         );
         if (otherConfig) {
-          handleLoadConfig(user_id, otherConfig.config_id);
+          handleLoadConfig(otherConfig.config_id);
         } else {
           setUserConfig(null);
         }
       }
     }
-    getConfigIDs(user_id);
+    getConfigIDs();
     setLoadingConfig(false);
     triggerFetchConversation();
     triggerFetchCollection();

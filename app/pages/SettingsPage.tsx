@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { getModels } from "../api/getModels";
 import { SessionContext } from "../components/contexts/SessionContext";
 import { ModelProvider } from "../types/objects";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Custom hooks
 import { useConfigState } from "../components/configuration/hooks/useConfigState";
@@ -46,7 +47,6 @@ import { ToastContext } from "../components/contexts/ToastContext";
  */
 export default function Home() {
   const {
-    id,
     userConfig,
     configIDs,
     updateConfig,
@@ -59,6 +59,9 @@ export default function Home() {
     savingConfig,
     updateUnsavedChanges,
   } = useContext(SessionContext);
+
+  // Get authentication token for API calls
+  const { getAuthToken } = useAuthenticatedFetch();
 
   // Configuration state management
   const {
@@ -124,7 +127,8 @@ export default function Home() {
     const fetchModels = async () => {
       try {
         setLoadingModels(true);
-        const modelsPayload = await getModels();
+        const token = await getAuthToken();
+        const modelsPayload = await getModels(token || undefined);
         if (modelsPayload.error) {
           console.error("Error fetching models:", modelsPayload.error);
         } else {
@@ -138,7 +142,7 @@ export default function Home() {
     };
 
     fetchModels();
-  }, []);
+  }, [getAuthToken]);
 
   // Helper function to handle saving configuration
   const handleSaveConfig = (setDefault: boolean = false) => {
@@ -157,24 +161,20 @@ export default function Home() {
 
   // Helper function to handle config selection
   const selectConfig = (configId: string) => {
-    if (id) {
-      if (changedConfig) {
-        showConfirmModal(
-          "Unsaved Changes",
-          "You have unsaved changes. Are you sure you want to load a new config?",
-          () => selectConfigFunction(configId)
-        );
-      } else {
-        selectConfigFunction(configId);
-      }
+    if (changedConfig) {
+      showConfirmModal(
+        "Unsaved Changes",
+        "You have unsaved changes. Are you sure you want to load a new config?",
+        () => selectConfigFunction(configId)
+      );
+    } else {
+      selectConfigFunction(configId);
     }
   };
 
   const selectConfigFunction = (configId: string) => {
-    if (id) {
-      handleLoadConfig(id, configId);
-      setEditName(false);
-    }
+    handleLoadConfig(configId);
+    setEditName(false);
   };
 
   // Helper function to handle storage cluster copying
@@ -203,8 +203,7 @@ export default function Home() {
   };
 
   const handleCreateConfigFunction = async () => {
-    if (!id) return;
-    await handleCreateConfig(id);
+    await handleCreateConfig();
     setChangedConfig(false);
     setEditName(false);
   };
@@ -237,17 +236,11 @@ export default function Home() {
           configIDs={configIDs}
           loadingConfigs={loadingConfigs}
           onCreateConfig={handleCreateConfigWithUniqueName}
-          onRefreshConfigs={() => {
-            if (id) {
-              getConfigIDs(id);
-            }
-          }}
+          onRefreshConfigs={() => getConfigIDs()}
           onSelectConfig={selectConfig}
-          onDeleteConfig={(configId, isCurrentConfig) => {
-            if (id) {
-              handleDeleteConfig(id, configId, isCurrentConfig);
-            }
-          }}
+          onDeleteConfig={(configId, isCurrentConfig) =>
+            handleDeleteConfig(configId, isCurrentConfig)
+          }
         />
 
         <div className="flex flex-row w-full gap-4 min-h-0 items-start justify-start h-full">
@@ -257,17 +250,11 @@ export default function Home() {
             configIDs={configIDs}
             loadingConfigs={loadingConfigs}
             onCreateConfig={handleCreateConfigWithUniqueName}
-            onRefreshConfigs={() => {
-              if (id) {
-                getConfigIDs(id);
-              }
-            }}
+            onRefreshConfigs={() => getConfigIDs()}
             onSelectConfig={selectConfig}
-            onDeleteConfig={(configId, isCurrentConfig) => {
-              if (id) {
-                handleDeleteConfig(id, configId, isCurrentConfig);
-              }
-            }}
+            onDeleteConfig={(configId, isCurrentConfig) =>
+              handleDeleteConfig(configId, isCurrentConfig)
+            }
           />
 
           {/* Main Content Area */}
@@ -311,8 +298,8 @@ export default function Home() {
                   onSaveConfig={handleSaveConfig}
                   onCancelConfig={cancelConfig}
                   onDeleteConfig={() => {
-                    if (id && userConfig?.backend?.id) {
-                      handleDeleteConfig(id, userConfig.backend.id, true);
+                    if (userConfig?.backend?.id) {
+                      handleDeleteConfig(userConfig.backend.id, true);
                     }
                   }}
                 />

@@ -47,7 +47,7 @@ import { SlOptions } from "react-icons/sl";
 import { useSearchParams, usePathname } from "next/navigation";
 
 import React, { useContext } from "react";
-import { SessionContext } from "@/app/components/contexts/SessionContext";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { getFeedback } from "@/app/api/getFeedback";
 import { deleteFeedback } from "@/app/api/deleteFeedback";
 import { RouterContext } from "../components/contexts/RouterContext";
@@ -64,7 +64,7 @@ export default function Home() {
   const { changePage } = useContext(RouterContext);
   const pathname = usePathname();
 
-  const { id } = useContext(SessionContext);
+  const { userId, getAuthToken } = useAuthenticatedFetch();
 
   const [feedbackData, setFeedbackData] =
     useState<FeedbackCollectionData | null>(null);
@@ -79,15 +79,13 @@ export default function Home() {
   const [maxPage, setMaxPage] = useState<number>(0);
 
   const fetchMetadata = async () => {
-    if (!id) {
-      return;
-    }
-    const data: FeedbackMetadata = await getFeedback(id);
+    const token = await getAuthToken();
+    const data: FeedbackMetadata = await getFeedback(token || undefined);
     setMaxPage(Math.ceil(data.total_feedback / feedbackPageSize) - 1);
   };
 
   const fetchFeedbackData = async () => {
-    if (!id || feedbackLoading.current) {
+    if (feedbackLoading.current) {
       return;
     }
     feedbackLoading.current = true;
@@ -115,11 +113,11 @@ export default function Home() {
       });
     }
 
-    if (process.env.NODE_ENV != "development" && id) {
+    if (process.env.NODE_ENV != "development" && userId) {
       filters.push({
         field: "user_id",
         operator: "equal",
-        value: id,
+        value: userId,
       });
     }
 
@@ -128,15 +126,16 @@ export default function Home() {
       filters: filters,
     };
 
+    const token = await getAuthToken();
     const feedbackData = await getCollectionData(
-      id,
       "ELYSIA_FEEDBACK__",
       feedbackPage - 1, // Convert from 1-based UI to 0-based API
       feedbackPageSize,
       feedbackSortOn,
       feedbackAscending,
       filter_config,
-      ""
+      "",
+      token || undefined
     );
     setFeedbackData(feedbackData as FeedbackCollectionData);
     fetchMetadata();
@@ -155,7 +154,7 @@ export default function Home() {
     feedbackSortOn,
     feedbackAscending,
     feedbackFilter,
-    id,
+    userId,
   ]);
 
   useEffect(() => {

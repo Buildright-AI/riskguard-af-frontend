@@ -1,26 +1,18 @@
 import { ConfigListPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function getConfigList(
-  user_id: string | null | undefined
+  token?: string
 ): Promise<ConfigListPayload> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return {
-        error: "No user id",
-        configs: [],
-        warnings: [],
-      };
-    }
-
-    const response = await fetch(`${host}/user/config/${user_id}/list`, {
+    const response = await fetchWithAuth(`/user/config/list`, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
       },
+      token,
     });
 
     if (!response.ok) {

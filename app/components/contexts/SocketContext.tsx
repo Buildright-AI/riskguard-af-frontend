@@ -6,11 +6,11 @@ import { getWebsocketHost } from "../host";
 import { useContext, useRef } from "react";
 import { ConversationContext } from "./ConversationContext";
 import { ToastContext } from "./ToastContext";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 export const SocketContext = createContext<{
   socketOnline: boolean;
   sendQuery: (
-    user_id: string,
     query: string,
     conversation_id: string,
     query_id: string,
@@ -32,6 +32,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   } = useContext(ConversationContext);
 
   const { showErrorToast, showSuccessToast } = useContext(ToastContext);
+
+  // Get authentication token for WebSocket connection
+  const { getAuthToken, isSignedIn } = useAuthenticatedFetch();
 
   const [socketOnline, setSocketOnline] = useState(false);
   const [socket, setSocket] = useState<WebSocket>();
@@ -59,61 +62,77 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [socketOnline, socket]);
 
   useEffect(() => {
-    if (initialRef.current) {
+    if (initialRef.current || !isSignedIn) {
       return;
     }
 
-    initialRef.current = true;
-
-    const socketHost = getWebsocketHost() + "query";
-    const localSocket = new WebSocket(socketHost);
-
-    localSocket.onopen = () => {
-      setSocketOnline(true);
-      showSuccessToast("Connected to RiskGuard");
-      if (process.env.NODE_ENV === "development") {
-        console.log("Socket opened");
-      }
-    };
-
-    localSocket.onmessage = (event) => {
+    // Initialize WebSocket connection with JWT token
+    const initializeSocket = async () => {
       try {
-        const message: Message = JSON.parse(event.data);
-        handleWebsocketMessage(message);
-      } catch (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.error(error);
+        const token = await getAuthToken();
+        if (!token) {
+          console.error("No authentication token available for WebSocket");
+          return;
         }
+
+        initialRef.current = true;
+
+        // Append JWT token to WebSocket URL as query parameter
+        const socketHost = getWebsocketHost() + `query?token=${encodeURIComponent(token)}`;
+        const localSocket = new WebSocket(socketHost);
+
+        localSocket.onopen = () => {
+          setSocketOnline(true);
+          showSuccessToast("Connected to RiskGuard");
+          if (process.env.NODE_ENV === "development") {
+            console.log("Socket opened");
+          }
+        };
+
+        localSocket.onmessage = (event) => {
+          try {
+            const message: Message = JSON.parse(event.data);
+            handleWebsocketMessage(message);
+          } catch (error) {
+            if (process.env.NODE_ENV === "development") {
+              console.error(error);
+            }
+          }
+        };
+
+        localSocket.onerror = (error) => {
+          if (process.env.NODE_ENV === "development") {
+            console.log(error);
+          }
+          setSocketOnline(false);
+          setSocket(undefined);
+          setAllConversationStatuses("");
+          handleAllConversationsError();
+          showErrorToast("Connection to RiskGuard lost");
+        };
+
+        localSocket.onclose = () => {
+          setSocketOnline(false);
+          setAllConversationStatuses("");
+          setSocket(undefined);
+          handleAllConversationsError();
+          showErrorToast("Connection to RiskGuard lost");
+          if (process.env.NODE_ENV === "development") {
+            console.log("Socket closed");
+          }
+        };
+
+        setSocket(localSocket);
+      } catch (error) {
+        console.error("Failed to initialize WebSocket:", error);
+        initialRef.current = false;
       }
     };
 
-    localSocket.onerror = (error) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log(error);
-      }
-      setSocketOnline(false);
-      setSocket(undefined);
-      setAllConversationStatuses("");
-      handleAllConversationsError();
-      showErrorToast("Connection to RiskGuard lost");
-    };
-
-    localSocket.onclose = () => {
-      setSocketOnline(false);
-      setAllConversationStatuses("");
-      setSocket(undefined);
-      handleAllConversationsError();
-      showErrorToast("Connection to RiskGuard lost");
-      if (process.env.NODE_ENV === "development") {
-        console.log("Socket closed");
-      }
-    };
-
-    setSocket(localSocket);
-  }, [reconnect]);
+    initializeSocket();
+  }, [reconnect, isSignedIn]);
 
   const sendQuery = async (
-    user_id: string,
     query: string,
     conversation_id: string,
     query_id: string,
@@ -129,9 +148,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       );
     }
 
+    // user_id is now extracted from JWT token on backend
     socket?.send(
       JSON.stringify({
-        user_id,
         query,
         query_id,
         conversation_id,

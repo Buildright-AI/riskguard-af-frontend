@@ -1,29 +1,26 @@
 import { CollectionDataPayload } from "@/app/types/payloads";
 import { Filter } from "@/app/types/objects";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function getCollectionData(
-  user_id: string,
   collection_name: string,
   _page_number: number,
   page_size: number,
   sort_on: string | null,
   ascending: boolean,
   filter_config: { type: string; filters: Filter[] },
-  query: string
+  query: string,
+  token?: string
 ) {
   // Ensure page number is at least 1
   const page_number = Math.max(_page_number, 1);
 
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/collections/${user_id}/view/${collection_name}`,
+    const response = await fetchWithAuth(
+      `/collections/view/${collection_name}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           page_number,
           page_size,
@@ -32,6 +29,7 @@ export async function getCollectionData(
           filter_config,
           query,
         }),
+        token,
       }
     );
 

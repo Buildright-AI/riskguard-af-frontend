@@ -5,6 +5,7 @@ import { getModels } from "@/app/api/getModels";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TbArrowBackUp } from "react-icons/tb";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 // Custom hooks
 import { useTreeConfigState } from "./hooks/useTreeConfigState";
@@ -20,14 +21,15 @@ import TreeConfigActions from "./TreeConfigActions";
  * Handles tree-specific configuration for individual conversations
  */
 export default function TreeSettingsView({
-  user_id,
   conversation_id,
   selectChat,
 }: {
-  user_id: string | null | undefined;
   conversation_id: string | null | undefined;
   selectChat: () => void;
 }) {
+  // Get authentication token for API calls
+  const { getAuthToken } = useAuthenticatedFetch();
+
   // Tree configuration state management
   const {
     currentConfig,
@@ -39,7 +41,7 @@ export default function TreeSettingsView({
     updateFields,
     updateSettingsFields,
     setCurrentConfig,
-  } = useTreeConfigState(user_id, conversation_id);
+  } = useTreeConfigState(conversation_id);
 
   // Models data state
   const [modelsData, setModelsData] = useState<{
@@ -59,7 +61,8 @@ export default function TreeSettingsView({
     const fetchModels = async () => {
       try {
         setLoadingModels(true);
-        const modelsPayload = await getModels();
+        const token = await getAuthToken();
+        const modelsPayload = await getModels(token || undefined);
         if (modelsPayload.error) {
           console.error("Error fetching models:", modelsPayload.error);
         } else {
@@ -73,7 +76,7 @@ export default function TreeSettingsView({
     };
 
     fetchModels();
-  }, []);
+  }, [getAuthToken]);
 
   if (loading) {
     return (

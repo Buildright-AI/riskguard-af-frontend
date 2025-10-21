@@ -1,27 +1,27 @@
 import { TreeConfigPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { BackendConfig } from "../types/objects";
 
 export async function saveTreeConfig(
-  user_id: string | null | undefined,
   conversation_id: string | null | undefined,
-  backend_config: BackendConfig | null
+  backend_config: BackendConfig | null,
+  token?: string
 ): Promise<TreeConfigPayload> {
   const startTime = performance.now();
   try {
-    if (!user_id || !conversation_id || !backend_config) {
+    if (!conversation_id || !backend_config) {
       return {
-        error: "No user id or backend config",
+        error: "No conversation id or backend config",
         config: null,
       };
     }
 
-    const response = await fetch(
-      `${host}/tree/config/${user_id}/${conversation_id}`,
+    const response = await fetchWithAuth(
+      `/tree/config/${conversation_id}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(backend_config),
+        token,
       }
     );
 

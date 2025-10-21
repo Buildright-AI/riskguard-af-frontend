@@ -1,23 +1,14 @@
 import { ConfigPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function createConfig(
-  user_id: string | null | undefined
+  token?: string
 ): Promise<ConfigPayload> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return {
-        error: "No user id",
-        config: null,
-        frontend_config: null,
-        warnings: [],
-      };
-    }
-
-    const response = await fetch(`${host}/user/config/${user_id}/new`, {
+    const response = await fetchWithAuth(`/user/config/new`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      token,
     });
 
     if (!response.ok) {

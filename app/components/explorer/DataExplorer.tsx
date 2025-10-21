@@ -53,7 +53,6 @@ const DataExplorer = () => {
     loadingData,
   } = useCollectionData({
     collection: collection ?? null,
-    id: typeof id === "string" ? id : null,
   });
 
   const { collectionMetadata, metadataRows, loadCollectionMetadata } =
@@ -75,7 +74,6 @@ const DataExplorer = () => {
 
   const metadataEditor = useCollectionMetadataEditor({
     collection,
-    id: typeof id === "string" ? id : null,
     collectionMetadata,
     metadataRows,
     collectionDataProperties: collectionData?.properties || {},

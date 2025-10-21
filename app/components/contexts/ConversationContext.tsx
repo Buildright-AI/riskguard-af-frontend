@@ -36,6 +36,7 @@ import { addFeedback } from "@/app/api/addFeedback";
 import { deleteFeedback } from "@/app/api/deleteFeedback";
 import { RouterContext } from "./RouterContext";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 export const ConversationContext = createContext<{
   conversations: Conversation[];
@@ -45,8 +46,8 @@ export const ConversationContext = createContext<{
   creatingNewConversation: boolean;
   setCreatingNewConversation: (creatingNewConversation: boolean) => void;
   loadingConversations: boolean;
-  addConversation: (user_id: string) => Promise<Conversation | null>;
-  removeConversation: (conversation_id: string) => void;
+  addConversation: () => Promise<Conversation | null>;
+  removeConversation: (conversation_id: string) => Promise<void>;
   selectConversation: (id: string) => void;
   setConversationStatus: (status: string, conversationId: string) => void;
   handleConversationError: (conversationId: string) => void;
@@ -90,8 +91,7 @@ export const ConversationContext = createContext<{
   conversationPreviews: { [key: string]: SavedTreeData };
   addSuggestionToConversation: (
     conversationId: string,
-    queryId: string,
-    user_id: string
+    queryId: string
   ) => void;
   loadConversationsFromDB: () => void;
   handleWebsocketMessage: (message: Message) => void;
@@ -108,7 +108,7 @@ export const ConversationContext = createContext<{
   startNewConversation: () => {},
   conversationPreviews: {},
   addConversation: () => Promise.resolve(null),
-  removeConversation: () => {},
+  removeConversation: () => Promise.resolve(),
   selectConversation: () => {},
   setConversationStatus: () => {},
   setAllConversationStatuses: () => {},
@@ -142,6 +142,9 @@ export const ConversationProvider = ({
 
   const { changePage, currentPage } = useContext(RouterContext);
 
+  // Use Clerk authentication
+  const { getAuthToken } = useAuthenticatedFetch();
+
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -158,19 +161,20 @@ export const ConversationProvider = ({
   const [creatingNewConversation, setCreatingNewConversation] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
 
-  const getDecisionTree = async (user_id: string, conversation_id: string) => {
-    if (user_id === "") return null;
+  const getDecisionTree = async (conversation_id: string) => {
+    const token = await getAuthToken();
     const data: DecisionTreePayload = await initializeTree(
-      user_id,
-      conversation_id
+      conversation_id,
+      false,
+      token || undefined
     );
     return data;
   };
 
   const loadConversationsFromDB = async () => {
-    if (!id) return;
     setLoadingConversations(true);
-    const data: SavedConversationPayload = await loadConversations(id || "");
+    const token = await getAuthToken();
+    const data: SavedConversationPayload = await loadConversations(token || undefined);
 
     let hasConversations = false;
     for (const [key, value] of Object.entries(data.trees)) {
@@ -198,12 +202,13 @@ export const ConversationProvider = ({
     if (conversation) {
       setCurrentConversation(conversationId);
     } else {
+      const token = await getAuthToken();
       const data: ConversationPayload = await loadConversation(
-        id || "",
-        conversationId
+        conversationId,
+        token || undefined
       );
       setCreatingNewConversation(true);
-      const tree = await getDecisionTree(id || "", conversationId);
+      const tree = await getDecisionTree(conversationId);
 
       if (tree != null && collections != null && tree.tree != null) {
         const queries = data.rebuild.filter(
@@ -267,19 +272,13 @@ export const ConversationProvider = ({
     setLoadingConversation(false);
   };
 
-  const addConversation = async (
-    user_id: string
-  ): Promise<Conversation | null> => {
-    if (!user_id?.trim()) {
-      return null;
-    }
-
+  const addConversation = async (): Promise<Conversation | null> => {
     if (creatingNewConversation) return null;
 
     const conversation_id = uuidv4();
     setCreatingNewConversation(true);
     const [tree] = await Promise.all([
-      getDecisionTree(user_id, conversation_id),
+      getDecisionTree(conversation_id),
     ]);
 
     if (tree === null || collections === null || tree.tree === null) {
@@ -314,13 +313,14 @@ export const ConversationProvider = ({
     return newConversation;
   };
 
-  const removeConversation = (conversation_id: string) => {
+  const removeConversation = async (conversation_id: string) => {
     if (currentConversation === conversation_id) {
       setCurrentConversation(null);
     }
     setConversations([]);
     setConversationPreviews({});
-    deleteConversation(id || "", conversation_id);
+    const token = await getAuthToken();
+    await deleteConversation(conversation_id, token || undefined);
     loadConversationsFromDB();
   };
 
@@ -368,22 +368,21 @@ export const ConversationProvider = ({
 
   const addSuggestionToConversation = async (
     conversationId: string,
-    queryId: string,
-    user_id: string
+    queryId: string
   ) => {
-    if (!user_id) return;
     const auth_key = "";
+    const token = await getAuthToken();
     const data: SuggestionPayload = await getSuggestions(
-      user_id,
       conversationId,
-      auth_key
+      auth_key,
+      token || undefined
     );
     const newMessage: Message = {
       type: "suggestion",
       id: uuidv4(),
       conversation_id: conversationId,
       query_id: queryId,
-      user_id: user_id,
+      user_id: id || "",
       payload: {
         error: "",
         suggestions: data.suggestions,
@@ -428,10 +427,8 @@ export const ConversationProvider = ({
   const getAllEnabledCollections = () => {
     return conversations.reduce((acc, c) => {
       const enabledCollectionNames = Object.entries(c.enabled_collections || {})
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([key, value]) => value === true)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .map(([key, value]) => key);
+        .filter(([, value]) => value === true)
+        .map(([key]) => key);
       return [...acc, ...enabledCollectionNames];
     }, [] as string[]);
   };
@@ -719,7 +716,8 @@ export const ConversationProvider = ({
     if (!conversation || conversation.error) return;
 
     if (conversation.queries[queryId].feedback === feedback) {
-      await deleteFeedback(id || "", conversationId, queryId);
+      const token = await getAuthToken();
+      await deleteFeedback(conversationId, queryId, token || undefined);
       setConversations((prevConversations) => {
         const newConversations = prevConversations.map((c) => {
           if (c.id === conversationId && c.queries[queryId]) {
@@ -736,7 +734,7 @@ export const ConversationProvider = ({
         return newConversations;
       });
     } else {
-      handleAddFeedback(id || "", conversationId, queryId, feedback);
+      handleAddFeedback(conversationId, queryId, feedback);
       setConversations((prevConversations) => {
         const newConversations = prevConversations.map((c) => {
           if (c.id === conversationId && c.queries[queryId]) {
@@ -756,16 +754,16 @@ export const ConversationProvider = ({
   };
 
   const handleAddFeedback = async (
-    user_id: string,
     conversation_id: string,
     query_id: string,
     feedback: number
   ) => {
+    const token = await getAuthToken();
     const data: BasePayload = await addFeedback(
-      user_id,
       conversation_id,
       query_id,
-      feedback
+      feedback,
+      token || undefined
     );
     return data;
   };
@@ -806,8 +804,7 @@ export const ConversationProvider = ({
       finishQuery(message.conversation_id, message.query_id);
       addSuggestionToConversation(
         message.conversation_id,
-        message.query_id,
-        message.user_id
+        message.query_id
       );
     } else if (message.type === "tree_update") {
       updateTree(message);
@@ -837,11 +834,9 @@ export const ConversationProvider = ({
   };
 
   const startNewConversation = async () => {
-    if (id) {
-      const newConversation = await addConversation(id);
-      if (newConversation) {
-        setCurrentConversation(newConversation.id);
-      }
+    const newConversation = await addConversation();
+    if (newConversation) {
+      setCurrentConversation(newConversation.id);
     }
   };
 

@@ -1,26 +1,14 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { FeedbackMetadata } from "@/app/components/types";
 
 export async function getFeedback(
-  user_id: string | null | undefined
+  token?: string
 ): Promise<FeedbackMetadata> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return {
-        total_feedback: 0,
-        feedback_by_value: {
-          positive: 0,
-          negative: 0,
-          superpositive: 0,
-        },
-        feedback_by_date: {},
-      };
-    }
-
-    const response = await fetch(`${host}/feedback/metadata/${user_id}`, {
+    const response = await fetchWithAuth(`/feedback/metadata`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      token,
     });
 
     if (!response.ok) {

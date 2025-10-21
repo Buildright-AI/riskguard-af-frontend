@@ -1,23 +1,23 @@
 import { BasePayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function deleteConfig(
-  user_id: string | null | undefined,
-  config_id: string | null
+  config_id: string | null,
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
-    if (!user_id || !config_id) {
+    if (!config_id) {
       return {
-        error: "No user id or config id",
+        error: "No config id",
       };
     }
 
-    const response = await fetch(
-      `${host}/user/config/${user_id}/${config_id}`,
+    const response = await fetchWithAuth(
+      `/user/config/${config_id}`,
       {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        token,
       }
     );
 

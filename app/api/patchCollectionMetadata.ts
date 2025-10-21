@@ -1,19 +1,19 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { PatchCollectionMetadataPayload } from "@/app/types/objects";
 
 export async function patchCollectionMetadata(
-  userId: string,
   collectionName: string,
   payload: PatchCollectionMetadataPayload,
+  token?: string
 ) {
   const startTime = performance.now();
   try {
-    const res = await fetch(
-      `${host}/collections/${userId}/metadata/${collectionName}`,
+    const res = await fetchWithAuth(
+      `/collections/metadata/${collectionName}`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        token,
       },
     );
     if (!res.ok) {
