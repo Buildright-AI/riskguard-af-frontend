@@ -245,33 +245,10 @@ const SidebarComponent: React.FC = () => {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton>
-                  <p>Powered by Buildright.ai</p>
+                <SidebarMenuButton onClick={() => openNewTab("https://buildright.ai")}>
+                  <p>Powered by Buildright</p>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                className="w-[--radix-popper-anchor-width]"
-              >
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://buildright.ai")}
-                >
-                  <CgWebsite />
-                  <span>Website</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://buildright.ai")}
-                >
-                  <CgFileDocument />
-                  <span>Documentation</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://buildright.ai")}
-                >
-                  <IoNewspaperOutline />
-                  <span>Support</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
