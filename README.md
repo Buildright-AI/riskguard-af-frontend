@@ -125,15 +125,6 @@ Elysia is built as a SPA using Next.js with client-side routing. The main naviga
 - **Evaluation** - AI model evaluation tools
 - **Explorer** - Advanced data browsing
 
-### Key Capabilities:
-
-- Real-time chat with AI models
-- Interactive data visualizations
-- 3D graphics and globe visualizations
-- Configurable AI model settings
-- Data collection management
-- Feedback and evaluation systems
-
 ## 🔧 Available Scripts
 
 ```bash
