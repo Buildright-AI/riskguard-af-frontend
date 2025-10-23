@@ -1,16 +1,14 @@
 import { UserInitPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function initializeUser(
-  user_id: string
+  token?: string
 ): Promise<UserInitPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetch(`${host}/init/user/${user_id}`, {
+    const response = await fetchWithAuth(`/init/user`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      token,
     });
 
     if (!response.ok) {

@@ -16,6 +16,7 @@ interface QueryInputProps {
   addDisplacement: (value: number) => void;
   addDistortion: (value: number) => void;
   selectSettings: () => void;
+  isAdmin: boolean;
 }
 
 const QueryInput: React.FC<QueryInputProps> = ({
@@ -25,6 +26,7 @@ const QueryInput: React.FC<QueryInputProps> = ({
   addDisplacement,
   addDistortion,
   selectSettings,
+  isAdmin,
 }) => {
   const [query, setQuery] = useState("");
 
@@ -126,7 +128,7 @@ const QueryInput: React.FC<QueryInputProps> = ({
             }}
           />
           <div className="flex justify-end gap-1 w-full">
-            {process.env.NODE_ENV === "development" && (
+            {isAdmin && process.env.NODE_ENV === "development" && (
               <Button
                 variant="ghost"
                 size={"icon"}
@@ -142,7 +144,7 @@ const QueryInput: React.FC<QueryInputProps> = ({
                 <RiFlowChart size={16} />
               </Button>
             )}
-            {query_length > 0 && (
+            {isAdmin && query_length > 0 && (
               <Button
                 variant="ghost"
                 size={"icon"}

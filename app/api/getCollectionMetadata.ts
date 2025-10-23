@@ -1,16 +1,17 @@
 import { MetadataPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function getCollectionMetadata(
-  user_id: string,
-  collection_name: string
+  collection_name: string,
+  token?: string
 ): Promise<MetadataPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/collections/${user_id}/metadata/${collection_name}`,
+    const response = await fetchWithAuth(
+      `/collections/metadata/${collection_name}`,
       {
         method: "GET",
+        token,
       }
     );
     if (!response.ok) {

@@ -7,9 +7,10 @@ import { SocketContext } from "../contexts/SocketContext";
 import { MdChatBubbleOutline } from "react-icons/md";
 import { GoDatabase } from "react-icons/go";
 import { AiOutlineExperiment } from "react-icons/ai";
-import { FaCircle, FaSquareXTwitter } from "react-icons/fa6";
+import { FaCircle } from "react-icons/fa6";
 import { MdOutlineSettingsInputComponent } from "react-icons/md";
 import { IoIosWarning } from "react-icons/io";
+import { IoLogOutOutline } from "react-icons/io5";
 
 import HomeSubMenu from "@/app/components/navigation/HomeSubMenu";
 import DataSubMenu from "@/app/components/navigation/DataSubMenu";
@@ -19,13 +20,10 @@ import { CgFileDocument } from "react-icons/cg";
 
 import { CgWebsite } from "react-icons/cg";
 import { IoNewspaperOutline } from "react-icons/io5";
-import { FaGithub } from "react-icons/fa";
-import { FaLinkedin } from "react-icons/fa";
-import { FaYoutube } from "react-icons/fa";
 
-import { RiRobot2Line } from "react-icons/ri";
-
-import { public_path } from "@/app/components/host";
+import { useUser, useClerk, useOrganization } from "@clerk/nextjs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
 
 import {
   Sidebar,
@@ -51,6 +49,7 @@ import SettingsSubMenu from "./SettingsSubMenu";
 import { RouterContext } from "../contexts/RouterContext";
 import { CollectionContext } from "../contexts/CollectionContext";
 import { SessionContext } from "../contexts/SessionContext";
+import { ToastContext } from "../contexts/ToastContext";
 import packageJson from "../../../package.json";
 
 const SidebarComponent: React.FC = () => {
@@ -58,6 +57,15 @@ const SidebarComponent: React.FC = () => {
   const { changePage, currentPage } = useContext(RouterContext);
   const { collections, loadingCollections } = useContext(CollectionContext);
   const { unsavedChanges } = useContext(SessionContext);
+  const { showConfirmModal } = useContext(ToastContext);
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const { organization, isLoaded } = useOrganization();
+
+  console.log('[SidebarComponent] isLoaded:', isLoaded, 'organization:', organization);
+
+  // Wait for organization to load before checking admin
+  const isAdmin = isLoaded ? checkIsAdmin(organization) : false;
 
   const [items, setItems] = useState<
     {
@@ -71,43 +79,69 @@ const SidebarComponent: React.FC = () => {
   >([]);
 
   useEffect(() => {
-    const _items = [
+    // Always show Chat section
+    const _items: {
+      title: string;
+      mode: string[];
+      icon: React.ReactNode;
+      warning?: boolean;
+      loading?: boolean;
+      onClick: () => void;
+    }[] = [
       {
         title: "Chat",
         mode: ["chat"],
         icon: <MdChatBubbleOutline />,
         onClick: () => changePage("chat", {}, true, unsavedChanges),
       },
-      {
-        title: "Data",
-        mode: ["data", "collection"],
-        icon: !collections?.some((c) => c.processed === true) ? (
-          <IoIosWarning className="text-warning" />
-        ) : (
-          <GoDatabase />
-        ),
-        warning: !collections?.some((c) => c.processed === true),
-        loading: loadingCollections,
-        onClick: () => changePage("data", {}, true, unsavedChanges),
-      },
-      {
-        title: "Settings",
-        mode: ["settings", "elysia"],
-        icon: <MdOutlineSettingsInputComponent />,
-        onClick: () => changePage("settings", {}, true, unsavedChanges),
-      },
-      {
-        title: "Evaluation",
-        mode: ["eval", "feedback", "display"],
-        icon: <AiOutlineExperiment />,
-        onClick: () => changePage("eval", {}, true, unsavedChanges),
-      },
     ];
+
+    // Only add admin sections if user is admin
+    if (isAdmin) {
+      _items.push(
+        {
+          title: "Data",
+          mode: ["data", "collection"],
+          icon: !collections?.some((c) => c.processed === true) ? (
+            <IoIosWarning className="text-warning" />
+          ) : (
+            <GoDatabase />
+          ),
+          warning: !collections?.some((c) => c.processed === true),
+          loading: loadingCollections,
+          onClick: () => changePage("data", {}, true, unsavedChanges),
+        },
+        {
+          title: "Settings",
+          mode: ["settings", "elysia"],
+          icon: <MdOutlineSettingsInputComponent />,
+          onClick: () => changePage("settings", {}, true, unsavedChanges),
+        },
+        {
+          title: "Evaluation",
+          mode: ["eval", "feedback", "display"],
+          icon: <AiOutlineExperiment />,
+          onClick: () => changePage("eval", {}, true, unsavedChanges),
+        }
+      );
+    }
+
     setItems(_items);
-  }, [collections, unsavedChanges]);
+  }, [collections, unsavedChanges, isAdmin, changePage, loadingCollections]);
 
   const openNewTab = (url: string) => {
     window.open(url, "_blank");
+  };
+
+  const handleLogout = () => {
+    showConfirmModal(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      async () => {
+        await signOut();
+        window.location.reload();
+      }
+    );
   };
 
   return (
@@ -115,12 +149,7 @@ const SidebarComponent: React.FC = () => {
       <SidebarHeader>
         <div className={`flex items-center gap-2 w-full justify-between p-2`}>
           <div className="flex items-center gap-2">
-            <img
-              src={`${public_path}logo.svg`}
-              alt="Elysia"
-              className="w-5 h-5 stext-primary"
-            />
-            <p className="text-sm font-bold text-primary">Elysia</p>
+            <p className="text-sm font-bold text-primary">RiskGuard</p>
           </div>
           <div className="flex items-center justify-center gap-1">
             {socketOnline ? (
@@ -176,105 +205,50 @@ const SidebarComponent: React.FC = () => {
         <Separator />
 
         {currentPage === "chat" && <HomeSubMenu />}
-        {(currentPage === "data" || currentPage === "collection") && (
+        {isAdmin && (currentPage === "data" || currentPage === "collection") && (
           <DataSubMenu />
         )}
-        {(currentPage === "eval" ||
-          currentPage === "feedback" ||
-          currentPage === "display") && <EvalSubMenu />}
-        {(currentPage === "settings" || currentPage === "elysia") && (
+        {isAdmin &&
+          (currentPage === "eval" ||
+            currentPage === "feedback" ||
+            currentPage === "display") && <EvalSubMenu />}
+        {isAdmin && (currentPage === "settings" || currentPage === "elysia") && (
           <SettingsSubMenu />
         )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="w-full justify-start items-center"
-              onClick={() => openNewTab("https://weaviate.github.io/elysia/")}
-            >
-              <CgFileDocument />
-              <span>Documentation</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="w-full justify-start items-center"
-              onClick={() => openNewTab("https://github.com/weaviate/elysia")}
-            >
-              <FaGithub />
-              <span>Github</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {user && (
+            <SidebarMenuItem>
+              <div className="flex items-center gap-3 px-2 py-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.imageUrl} alt={`${user.firstName} ${user.lastName}`} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary truncate">
+                    {user.firstName} {user.lastName}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-error transition-colors p-1"
+                  title="Sign out"
+                >
+                  <IoLogOutOutline className="h-5 w-5" />
+                </button>
+              </div>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton>
-                  <img
-                    src={`${public_path}weaviate-logo.svg`}
-                    alt="Weaviate"
-                    className="w-4 h-4"
-                  />
-                  <p>Powered by Weaviate</p>
+                <SidebarMenuButton onClick={() => openNewTab("https://buildright.ai")}>
+                  <p>Powered by Buildright</p>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                className="w-[--radix-popper-anchor-width]"
-              >
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://weaviate.io/")}
-                >
-                  <CgWebsite />
-                  <span>Website</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://weaviate.io/product/query-agent")
-                  }
-                >
-                  <RiRobot2Line />
-                  <span>Weaviate Query Agent</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://newsletter.weaviate.io/")}
-                >
-                  <IoNewspaperOutline />
-                  <span>Newsletter</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://github.com/weaviate/weaviate")
-                  }
-                >
-                  <FaGithub />
-                  <span>GitHub</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab(
-                      "https://www.linkedin.com/company/weaviate-io/posts/?feedView=all"
-                    )
-                  }
-                >
-                  <FaLinkedin />
-                  <span>LinkedIn</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => openNewTab("https://x.com/weaviate_io")}
-                >
-                  <FaSquareXTwitter />
-                  <span>X</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNewTab("https://www.youtube.com/@Weaviate")
-                  }
-                >
-                  <FaYoutube />
-                  <span>YouTube</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -6,6 +6,7 @@ import { getCollections } from "@/app/api/getCollections";
 import { SessionContext } from "./SessionContext";
 import { deleteCollectionMetadata } from "@/app/api/deleteCollectionMetadata";
 import { ToastContext } from "./ToastContext";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 export const CollectionContext = createContext<{
   collections: Collection[];
@@ -28,6 +29,7 @@ export const CollectionProvider = ({
 }) => {
   const { id, fetchCollectionFlag, initialized } = useContext(SessionContext);
   const { showErrorToast, showSuccessToast } = useContext(ToastContext);
+  const { getAuthToken } = useAuthenticatedFetch();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loadingCollections, setLoadingCollections] = useState(false);
 
@@ -49,7 +51,8 @@ export const CollectionProvider = ({
     if (!idRef.current) return;
     setCollections([]);
     setLoadingCollections(true);
-    const collections: Collection[] = await getCollections(idRef.current);
+    const token = await getAuthToken();
+    const collections: Collection[] = await getCollections(token || undefined);
     setCollections(collections);
     setLoadingCollections(false);
     showSuccessToast(`${collections.length} Collections Loaded`);
@@ -57,9 +60,10 @@ export const CollectionProvider = ({
 
   const deleteCollection = async (collection_name: string) => {
     if (!idRef.current) return;
+    const token = await getAuthToken();
     const result = await deleteCollectionMetadata(
-      idRef.current,
-      collection_name
+      collection_name,
+      token || undefined
     );
 
     if (result.error) {

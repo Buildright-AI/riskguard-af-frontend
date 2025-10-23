@@ -1,19 +1,15 @@
 import { BasePayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function setDefaultConfig(
-  user_id: string | null | undefined,
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return { error: "User ID is required" };
-    }
-
-    const response = await fetch(`${host}/api/default_config`, {
+    const response = await fetchWithAuth(`/api/default_config`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id }),
+      body: JSON.stringify({}),
+      token,
     });
 
     if (!response.ok) {

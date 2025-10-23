@@ -1,25 +1,23 @@
 import { TreeConfigPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function newTreeConfig(
-  user_id: string | null | undefined,
-  conversation_id: string | null | undefined
+  conversation_id: string | null | undefined,
+  token?: string
 ): Promise<TreeConfigPayload> {
   const startTime = performance.now();
   try {
-    if (!user_id || !conversation_id) {
+    if (!conversation_id) {
       return {
-        error: "No user id or conversation id",
+        error: "No conversation id",
         config: null,
       };
     }
-    const response = await fetch(
-      `${host}/tree/config/${user_id}/${conversation_id}/new`,
+    const response = await fetchWithAuth(
+      `/tree/config/${conversation_id}/new`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        token,
       }
     );
 

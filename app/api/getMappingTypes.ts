@@ -1,11 +1,12 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { MappingTypesPayload } from "../types/payloads";
 
-export async function getMappingTypes(): Promise<MappingTypesPayload> {
+export async function getMappingTypes(token?: string): Promise<MappingTypesPayload> {
   const startTime = performance.now();
   try {
-    const res = await fetch(`${host}/collections/mapping_types`, {
+    const res = await fetchWithAuth(`/collections/mapping_types`, {
       method: "GET",
+      token,
     });
     if (!res.ok) {
       console.error(

@@ -1,29 +1,22 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { BasePayload } from "@/app/types/payloads";
 
 export async function addFeedback(
-  user_id: string | null | undefined,
   conversation_id: string,
   query_id: string,
-  feedback: number
+  feedback: number,
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return {
-        error: "No user id",
-      };
-    }
-
-    const response = await fetch(`${host}/feedback/add`, {
+    const response = await fetchWithAuth(`/feedback/add`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id,
         conversation_id,
         query_id,
         feedback,
       }),
+      token,
     });
 
     if (!response.ok) {

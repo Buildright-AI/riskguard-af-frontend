@@ -1,24 +1,22 @@
 import { DecisionTreePayload } from "@/app/types/payloads";
 import { DecisionTreeNode } from "@/app/types/objects";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function initializeTree(
-  user_id: string,
   conversation_id: string,
-  low_memory: boolean = false
+  low_memory: boolean = false,
+  token?: string
 ): Promise<DecisionTreePayload> {
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/init/tree/${user_id}/${conversation_id}`,
+    const response = await fetchWithAuth(
+      `/init/tree/${conversation_id}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           low_memory: low_memory,
         }),
+        token,
       }
     );
 

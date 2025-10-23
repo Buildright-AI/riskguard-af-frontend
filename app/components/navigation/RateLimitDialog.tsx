@@ -11,19 +11,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { FaLinkedin } from "react-icons/fa";
-import { FaSquareXTwitter } from "react-icons/fa6";
-import { FaNewspaper } from "react-icons/fa6";
-
-import { Separator } from "@/components/ui/separator";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { Button } from "@/components/ui/button";
-
-import { Input } from "@/components/ui/input";
 
 const RateLimitDialog: React.FC = () => {
   const [open, setOpen] = useState(() => {
@@ -54,136 +44,20 @@ const RateLimitDialog: React.FC = () => {
     setOpen(false);
   };
 
-  const openLink = (url: string) => {
-    window.open(url, "_blank");
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Thank you for trying Elysia!</DialogTitle>
+          <DialogTitle>Thank you for trying RiskGuard!</DialogTitle>
           <DialogDescription>
-            You hit today&apos;s rate limit, but no worries, we&apos;ll reset it
-            tomorrow!
+            You hit request rate limit, but no worries, we&apos;ll reset it
+            automatically!
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <p>
-            In the meantime, you can follow us on social media to stay updated
-            on Elysia, or subscribe to one of our newsletters to get updates on
-            our latest features.
+            Please check back later to continue using RiskGuard.
           </p>
-          <div className="flex flex-col gap-2">
-            <p>Subscribe to our newsletter</p>
-            <div className="flex flex-row gap-2">
-              <Input
-                placeholder="Enter your email"
-                disabled={true}
-                className="border-secondary"
-              />
-              <Button
-                variant="outline"
-                className="text-primary border-secondary"
-                disabled={true}
-              >
-                Subscribe
-              </Button>
-            </div>
-          </div>
-          <Separator />
-          <div className="flex flex-col lg:flex-row gap-3 lg:justify-between">
-            <div className="flex flex-row gap-2 items-center">
-              <Avatar>
-                <AvatarImage
-                  src="https://media.licdn.com/dms/image/v2/D4D0BAQFfgBLRA2U4Og/company-logo_200_200/company-logo_200_200/0/1698828873823/weaviate_io_logo?e=1747872000&v=beta&t=7pT2HiWmf65d6gnJGebFDriKy_3Ml08On_ELqmD3XAs"
-                  alt="@weaviate"
-                />
-                <AvatarFallback>Weaviate</AvatarFallback>
-              </Avatar>
-              <p>Weaviate</p>
-            </div>
-            <div className="flex flex-row gap-2">
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  openLink(
-                    "https://www.linkedin.com/company/weaviate-io/posts/?feedView=all"
-                  )
-                }
-              >
-                <FaLinkedin className="text-primary" /> LinkedIn
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => openLink("https://x.com/weaviate_io")}
-              >
-                <FaSquareXTwitter className="text-primary" /> X
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => openLink("https://newsletter.weaviate.io/")}
-              >
-                <FaNewspaper className="text-primary" /> Newsletter
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-col lg:flex-row gap-3 lg:justify-between">
-            <div className="flex flex-row gap-2 items-center">
-              <Avatar>
-                <AvatarImage
-                  src="https://media.licdn.com/dms/image/v2/C5603AQGp4PgKAHLdoQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1571675697175?e=1745452800&v=beta&t=UTDpZtOEpJetUHsoIgJbEIY4-5YITAvLmyDNCMFtdyA"
-                  alt="@danny"
-                />
-                <AvatarFallback>Danny Williams</AvatarFallback>
-              </Avatar>
-              <p>Danny Williams</p>
-            </div>
-            <div className="flex flex-row gap-2">
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  openLink("https://www.linkedin.com/in/dannyjameswilliams/")
-                }
-              >
-                <FaLinkedin className="text-primary" /> LinkedIn
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => openLink("https://x.com/drdannywilliams")}
-              >
-                <FaSquareXTwitter className="text-primary" /> X
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-col lg:flex-row gap-3 lg:justify-between">
-            <div className="flex flex-row gap-2 items-center">
-              <Avatar>
-                <AvatarImage
-                  src="https://media.licdn.com/dms/image/v2/D4D03AQERM97c20Fx2A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1707575479597?e=1745452800&v=beta&t=bDGsQFmXa5ISIEIQgQTFQ8aJfTKN3JnpSikYDqnakJY"
-                  alt="@edward"
-                />
-                <AvatarFallback>Edward</AvatarFallback>
-              </Avatar>
-              <p>Edward Schmuhl</p>
-            </div>
-            <div className="flex flex-row gap-2">
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  openLink("https://www.linkedin.com/in/edwardschmuhl/")
-                }
-              >
-                <FaLinkedin className="text-primary" /> LinkedIn
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => openLink("https://x.com/aestheticedwar1")}
-              >
-                <FaSquareXTwitter className="text-primary" /> X
-              </Button>
-            </div>
-          </div>
         </div>
         <DialogFooter className="flex flex-col lg:flex-row justify-center lg:justify-between w-full gap-4 mt-5">
           <div className="flex items-center space-x-2">

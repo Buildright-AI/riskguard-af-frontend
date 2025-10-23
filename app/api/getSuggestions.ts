@@ -1,23 +1,20 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { SuggestionPayload } from "@/app/types/chat";
 
 export async function getSuggestions(
-  user_id: string,
   conversation_id: string,
   auth_key: string,
+  token?: string
 ) {
   const startTime = performance.now();
   try {
-    const response = await fetch(`${host}/util/follow_up_suggestions`, {
+    const response = await fetchWithAuth(`/util/follow_up_suggestions`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
-        user_id,
         conversation_id,
         auth_key,
       }),
+      token,
     });
 
     if (!response.ok) {

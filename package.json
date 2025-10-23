@@ -1,6 +1,6 @@
 {
   "name": "elysia",
-  "version": "0.2.4",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,7 +14,8 @@
     "test": "npm run lint"
   },
   "dependencies": {
-    "@fingerprintjs/fingerprintjs": "^4.6.2",
+    "@clerk/nextjs": "^6.33.4",
+    "@clerk/themes": "^2.4.26",
     "@floating-ui/react": "^0.27.12",
     "@next/third-parties": "^15.1.7",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -44,7 +45,6 @@
     "cmdk": "^1.1.1",
     "dagre": "^0.8.5",
     "embla-carousel-react": "^8.5.2",
-    "fingerprintjs": "^0.5.3",
     "floating-ui": "^5.2.8",
     "framer-motion": "^12.19.1",
     "glslify": "^7.1.1",

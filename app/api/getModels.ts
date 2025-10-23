@@ -1,14 +1,12 @@
 import { ModelsPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
-export async function getModels(): Promise<ModelsPayload> {
+export async function getModels(token?: string): Promise<ModelsPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetch(`${host}/user/config/models`, {
+    const response = await fetchWithAuth(`/user/config/models`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      token,
     });
 
     if (!response.ok) {

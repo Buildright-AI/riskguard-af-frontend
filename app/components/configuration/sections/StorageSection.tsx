@@ -50,7 +50,7 @@ export default function StorageSection({
           <div className="h-7 w-7 bg-background rounded-md flex items-center justify-center">
             <MdStorage />
           </div>
-          <p className="text-primary text-lg">Elysia Storage</p>
+          <p className="text-primary text-lg">RiskGuard Storage</p>
         </div>
         <div className="flex items-center justify-end w-full sm:w-auto">
           <div>

@@ -53,7 +53,6 @@ const DataExplorer = () => {
     loadingData,
   } = useCollectionData({
     collection: collection ?? null,
-    id: typeof id === "string" ? id : null,
   });
 
   const { collectionMetadata, metadataRows, loadCollectionMetadata } =
@@ -75,7 +74,6 @@ const DataExplorer = () => {
 
   const metadataEditor = useCollectionMetadataEditor({
     collection,
-    id: typeof id === "string" ? id : null,
     collectionMetadata,
     metadataRows,
     collectionDataProperties: collectionData?.properties || {},
@@ -220,7 +218,7 @@ const DataExplorer = () => {
               <p className="text-sm font-bold text-warning">Warning</p>
               <p className="text-sm ">
                 This collection needs to be analyzed before it can be used in
-                Elysia and to access its metadata.
+                RiskGuard and to access its metadata.
               </p>
             </div>
           </div>

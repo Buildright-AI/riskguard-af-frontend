@@ -1,16 +1,17 @@
 import { ConversationPayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function loadConversation(
-  user_id: string,
   conversation_id: string,
+  token?: string
 ) {
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/db/${user_id}/load_tree/${conversation_id}`,
+    const response = await fetchWithAuth(
+      `/db/load_tree/${conversation_id}`,
       {
         method: "GET",
+        token,
       },
     );
 

@@ -6,6 +6,8 @@ import DisplayIcon from "./DisplayIcon";
 import { FaCode } from "react-icons/fa6";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useOrganization } from "@clerk/nextjs";
+import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
 
 interface CodeDisplayProps {
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -23,8 +25,15 @@ const CodeDisplay: React.FC<CodeDisplayProps> = ({
   handleViewChange,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const { organization, isLoaded } = useOrganization();
+
+  // Check if user is admin - only show Source Code button to admins
+  const isAdmin = isLoaded ? checkIsAdmin(organization) : false;
 
   if (!payload) return null;
+
+  // Hide Source Code button for non-admin users
+  if (!isAdmin) return null;
 
   return (
     <motion.div

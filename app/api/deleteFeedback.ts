@@ -1,27 +1,20 @@
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 import { BasePayload } from "@/app/types/payloads";
 
 export async function deleteFeedback(
-  user_id: string | null | undefined,
   conversation_id: string,
-  query_id: string
+  query_id: string,
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
-    if (!user_id) {
-      return {
-        error: "No user id",
-      };
-    }
-
-    const response = await fetch(`${host}/feedback/remove`, {
+    const response = await fetchWithAuth(`/feedback/remove`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id,
         conversation_id,
         query_id,
       }),
+      token,
     });
 
     if (!response.ok) {

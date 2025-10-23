@@ -1,18 +1,19 @@
 import { BasePayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function deleteConversation(
-  user_id: string,
   conversation_id: string,
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
     // TODO: change to DELETE once backend supports it
-    const response = await fetch(
-      `${host}/db/${user_id}/delete_tree/${conversation_id}`,
+    const response = await fetchWithAuth(
+      `/db/delete_tree/${conversation_id}`,
       {
         method: "DELETE",
         body: JSON.stringify({}),
+        token,
       },
     );
 

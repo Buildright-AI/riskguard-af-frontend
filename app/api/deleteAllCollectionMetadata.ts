@@ -1,15 +1,16 @@
 import { BasePayload } from "@/app/types/payloads";
-import { host } from "@/app/components/host";
+import { fetchWithAuth } from "@/lib/api/client";
 
 export async function deleteAllCollectionMetadata(
-  user_id: string
+  token?: string
 ): Promise<BasePayload> {
   const startTime = performance.now();
   try {
-    const response = await fetch(
-      `${host}/collections/${user_id}/metadata/delete/all`,
+    const response = await fetchWithAuth(
+      `/collections/metadata/delete/all`,
       {
         method: "DELETE",
+        token,
       }
     );
     if (!response.ok) {
