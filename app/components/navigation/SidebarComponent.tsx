@@ -16,11 +16,6 @@ import HomeSubMenu from "@/app/components/navigation/HomeSubMenu";
 import DataSubMenu from "@/app/components/navigation/DataSubMenu";
 import EvalSubMenu from "@/app/components/navigation/EvalSubMenu";
 
-import { CgFileDocument } from "react-icons/cg";
-
-import { CgWebsite } from "react-icons/cg";
-import { IoNewspaperOutline } from "react-icons/io5";
-
 import { useUser, useClerk, useOrganization } from "@clerk/nextjs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { checkIsAdmin } from "@/lib/utils/checkIsAdmin";
@@ -41,8 +36,6 @@ import { Separator } from "@/components/ui/separator";
 
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SettingsSubMenu from "./SettingsSubMenu";
