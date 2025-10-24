@@ -42,10 +42,6 @@ const SettingsSubMenu: React.FC = () => {
             <GiAbstract053 />
             <p>Blob</p>
           </SidebarMenuButton>
-          <SidebarMenuButton>
-            <IoSettingsOutline />
-            <p>Theme (Coming Soon)</p>
-          </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarGroupContent>
     </SidebarGroup>
