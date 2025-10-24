@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import SidebarComponent from "../navigation/SidebarComponent";
 import { SessionProvider } from "../contexts/SessionContext";
 import { CollectionProvider } from "../contexts/CollectionContext";
@@ -19,10 +20,22 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useAuth();
   const isAuthPage = pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up");
 
+  // For auth pages, render them immediately
   if (isAuthPage) {
     return <>{children}</>;
+  }
+
+  // For protected pages, prevent rendering until authenticated
+  // The middleware will handle redirecting to /sign-in
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <div className="flex flex-col w-screen h-screen items-center justify-center">
+        <p className="text-primary text-xl shine">Loading...</p>
+      </div>
+    );
   }
 
   return (
