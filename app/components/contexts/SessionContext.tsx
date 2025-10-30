@@ -97,6 +97,7 @@ export const SessionProvider = ({
   const [loadingConfigs, setLoadingConfigs] = useState<boolean>(false);
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
   const initialized = useRef(false);
+  const autoLoadedDefault = useRef(false);
   const [fetchCollectionFlag, setFetchCollectionFlag] =
     useState<boolean>(false);
   const [fetchConversationFlag, setFetchConversationFlag] =
@@ -158,6 +159,7 @@ export const SessionProvider = ({
   useEffect(() => {
     if (initialized.current || !id || !orgLoaded) return;
     initUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, orgLoaded]);
 
   useEffect(() => {
@@ -178,6 +180,28 @@ export const SessionProvider = ({
       setMode("settings");
     }
   }, [pathname]);
+
+  // Auto-load default config after initialization (only once)
+  useEffect(() => {
+    // Only run once after user is initialized and config list is loaded
+    if (!initialized.current || configIDs.length === 0 || !userConfig || autoLoadedDefault.current) {
+      return;
+    }
+
+    // Find the default config from the list
+    const defaultConfig = configIDs.find((config) => config.default === true);
+
+    // If there's a default config and current config is not the default, load it
+    if (defaultConfig && userConfig.backend?.id !== defaultConfig.config_id) {
+      console.log(`[SessionContext] Auto-loading default config: ${defaultConfig.name}`);
+      handleLoadConfig(defaultConfig.config_id);
+      autoLoadedDefault.current = true; // Mark as done, won't run again
+    } else {
+      // If current config is already the default, mark as done
+      autoLoadedDefault.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configIDs, userConfig]);
 
   const initUser = async () => {
     const token = await getAuthToken();
@@ -297,11 +321,6 @@ export const SessionProvider = ({
       showErrorToast("Failed to Create Configuration", response.error);
       setLoadingConfig(false);
       return;
-    } else {
-      showSuccessToast(
-        "Configuration Created",
-        "New configuration created successfully."
-      );
     }
 
     // Check if name already exists and generate unique name if needed
@@ -321,9 +340,29 @@ export const SessionProvider = ({
       }
     }
 
+    // Save the newly created config to persist it to the database
+    const saveResponse: ConfigPayload = await saveConfig(
+      response.config,
+      response.frontend_config,
+      false, // Don't set as default automatically
+      token || undefined
+    );
+
+    if (saveResponse.error) {
+      console.error(saveResponse.error);
+      showErrorToast("Failed to Save Configuration", saveResponse.error);
+      setLoadingConfig(false);
+      return;
+    }
+
+    showSuccessToast(
+      "Configuration Created",
+      "New configuration created successfully."
+    );
+
     setUserConfig({
-      backend: response.config,
-      frontend: response.frontend_config,
+      backend: saveResponse.config,
+      frontend: saveResponse.frontend_config,
     });
     getConfigIDs();
     setLoadingConfig(false);
