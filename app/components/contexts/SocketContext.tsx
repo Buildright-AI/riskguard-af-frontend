@@ -17,9 +17,11 @@ export const SocketContext = createContext<{
     route?: string,
     mimick?: boolean
   ) => Promise<boolean>;
+  stopQuery: (conversation_id: string, query_id: string) => void;
 }>({
   socketOnline: false,
   sendQuery: async () => false,
+  stopQuery: () => {},
 });
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
@@ -163,8 +165,22 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return Promise.resolve(true);
   };
 
+  const stopQuery = (conversation_id: string, query_id: string) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Sending stop request for conversation ${conversation_id}, query ${query_id}`);
+    }
+
+    socket?.send(
+      JSON.stringify({
+        type: "cancel",
+        conversation_id,
+        query_id,
+      })
+    );
+  };
+
   return (
-    <SocketContext.Provider value={{ socketOnline, sendQuery }}>
+    <SocketContext.Provider value={{ socketOnline, sendQuery, stopQuery }}>
       {children}
     </SocketContext.Provider>
   );

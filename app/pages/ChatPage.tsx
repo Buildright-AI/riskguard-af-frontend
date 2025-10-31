@@ -50,7 +50,7 @@ const AbstractSphereScene = dynamic(
 );
 
 export default function ChatPage() {
-  const { sendQuery, socketOnline } = useContext(SocketContext);
+  const { sendQuery, stopQuery, socketOnline } = useContext(SocketContext);
   const { showRateLimitDialog } = useContext(SessionContext);
   const {
     changeBaseToQuery,
@@ -60,6 +60,7 @@ export default function ChatPage() {
     conversations,
     updateFeedbackForQuery,
     loadingConversation,
+    cancelQuery,
   } = useContext(ConversationContext);
 
   const { getRandomPrompts, collections } = useContext(CollectionContext);
@@ -75,6 +76,7 @@ export default function ChatPage() {
   }>({});
   const [currentTitle, setCurrentTitle] = useState<string>("");
   const [currentStatus, setCurrentStatus] = useState<string>("");
+  const [currentQueryId, setCurrentQueryId] = useState<string>("");
   const [mode, setMode] = useState<"chat" | "flow" | "debug" | "settings">(
     "chat"
   );
@@ -112,6 +114,7 @@ export default function ChatPage() {
     if (_conversation === null || _conversation === undefined) {
       return;
     } else {
+      setCurrentQueryId(query_id);
       sendQuery(
         trimmedQuery,
         _conversation.id,
@@ -122,6 +125,21 @@ export default function ChatPage() {
       changeBaseToQuery(_conversation.id, trimmedQuery);
       addTreeToConversation(_conversation.id);
       addQueryToConversation(_conversation.id, trimmedQuery, query_id);
+    }
+  };
+
+  const handleStopQuery = () => {
+    const _conversation = conversations.find(
+      (c) => c.id === currentConversation
+    );
+
+    if (_conversation && currentQueryId) {
+      // Immediately clear UI (optimistic update) - don't wait for backend
+      cancelQuery(_conversation.id);
+      setCurrentQueryId("");
+
+      // Then send stop message to backend
+      stopQuery(_conversation.id, currentQueryId);
     }
   };
 
@@ -330,6 +348,7 @@ export default function ChatPage() {
               query_length={Object.keys(currentQuery).length}
               currentStatus={currentStatus}
               handleSendQuery={handleSendQuery}
+              handleStopQuery={handleStopQuery}
               addDisplacement={addDisplacement}
               addDistortion={addDistortion}
               selectSettings={selectSettings}
