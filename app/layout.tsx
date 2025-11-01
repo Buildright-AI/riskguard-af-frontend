@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import "./globals.css";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import AuthenticatedLayout from "./components/layouts/AuthenticatedLayout";
 
 const space_grotesk = Space_Grotesk({
@@ -36,7 +35,6 @@ export default function RootLayout({
       signUpUrl="/sign-up"
     >
       <html lang="en">
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_G_KEY || ""} />
         <body
           className={`bg-background h-screen w-screen overflow-hidden ${space_grotesk.variable} ${manrope.variable} font-text antialiased flex`}
         >

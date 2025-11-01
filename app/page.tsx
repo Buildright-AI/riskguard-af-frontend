@@ -9,7 +9,6 @@ import CollectionPage from "./pages/CollectionPage";
 import SettingsPage from "./pages/SettingsPage";
 import EvalPage from "./pages/EvalPage";
 import FeedbackPage from "./pages/FeedbackPage";
-import ElysiaPage from "./pages/ElysiaPage";
 import DisplayPage from "./pages/DisplayPage";
 import { ToastContext } from "./components/contexts/ToastContext";
 import ConfirmationModal from "./components/dialog/ConfirmationModal";
@@ -36,7 +35,6 @@ export default function Home() {
           {currentPage === "settings" && <SettingsPage />}
           {currentPage === "eval" && <EvalPage />}
           {currentPage === "feedback" && <FeedbackPage />}
-          {currentPage === "elysia" && <ElysiaPage />}
           {currentPage === "display" && <DisplayPage />}
         </>
       )}

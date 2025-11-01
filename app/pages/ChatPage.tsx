@@ -37,17 +37,9 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-import dynamic from "next/dynamic";
 import { Separator } from "@/components/ui/separator";
 import { CollectionContext } from "../components/contexts/CollectionContext";
 import TreeSettingsView from "../components/configuration/TreeSettingsView";
-
-const AbstractSphereScene = dynamic(
-  () => import("@/app/components/threejs/AbstractSphere"),
-  {
-    ssr: false,
-  }
-);
 
 export default function ChatPage() {
   const { sendQuery, stopQuery, socketOnline } = useContext(SocketContext);
@@ -82,19 +74,6 @@ export default function ChatPage() {
   );
   const [currentTrees, setCurrentTrees] = useState<DecisionTreeNode[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const displacementStrength = useRef(0.0);
-  const distortionStrength = useRef(0.0);
-
-  const addDisplacement = (value: number) => {
-    displacementStrength.current += value;
-    displacementStrength.current = Math.min(displacementStrength.current, 0.1);
-  };
-
-  const addDistortion = (value: number) => {
-    distortionStrength.current += value;
-    distortionStrength.current = Math.min(distortionStrength.current, 0.3);
-  };
 
   const [randomPrompts, setRandomPrompts] = useState<string[]>([]);
 
@@ -209,19 +188,6 @@ export default function ChatPage() {
   if (!socketOnline) {
     return (
       <div className="flex flex-col w-screen h-screen items-center justify-center">
-        <div
-          className={`absolute flex pointer-events-none -z-30 items-center justify-center lg:w-fit lg:h-fit w-full h-full fade-in`}
-        >
-          <div
-            className={`cursor-pointer lg:w-[35vw] lg:h-[35vw] w-[90vw] h-[90vw]  `}
-          >
-            <AbstractSphereScene
-              debug={false}
-              displacementStrength={displacementStrength}
-              distortionStrength={distortionStrength}
-            />
-          </div>
-        </div>
         <p className="text-primary text-xl shine">Loading RiskGuard...</p>
       </div>
     );
@@ -330,8 +296,6 @@ export default function ChatPage() {
                       NER={query.NER}
                       feedback={query.feedback}
                       updateFeedback={updateFeedbackForQuery}
-                      addDisplacement={addDisplacement}
-                      addDistortion={addDistortion}
                       handleSendQuery={handleSendQuery}
                       isLastQuery={index === array.length - 1}
                     />
@@ -349,27 +313,10 @@ export default function ChatPage() {
               currentStatus={currentStatus}
               handleSendQuery={handleSendQuery}
               handleStopQuery={handleStopQuery}
-              addDisplacement={addDisplacement}
-              addDistortion={addDistortion}
               selectSettings={selectSettings}
               isAdmin={isAdmin}
             />
           </div>
-          {Object.keys(currentQuery).length === 0 && (
-            <div
-              className={`absolute flex pointer-events-none -z-30 items-center justify-center lg:w-fit lg:h-fit w-full h-full fade-in`}
-            >
-              <div
-                className={`cursor-pointer lg:w-[35vw] lg:h-[35vw] w-[90vw] h-[90vw]  `}
-              >
-                <AbstractSphereScene
-                  debug={false}
-                  displacementStrength={displacementStrength}
-                  distortionStrength={distortionStrength}
-                />
-              </div>
-            </div>
-          )}
           {Object.keys(currentQuery).length === 0 && (
             <div className="absolute flex flex-col justify-center items-center w-full h-full gap-3 fade-in">
               <div className="flex items-center gap-4">
