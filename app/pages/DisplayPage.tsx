@@ -83,8 +83,6 @@ export default function Home() {
                 NER={query.NER}
                 feedback={query.feedback}
                 updateFeedback={updateFeedbackForQuery}
-                addDisplacement={() => {}}
-                addDistortion={() => {}}
               />
             </ChatProvider>
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaCircle } from "react-icons/fa";
 import { IoArrowUpCircleSharp, IoClose, IoStopCircle } from "react-icons/io5";
 import { RiFlowChart } from "react-icons/ri";
@@ -14,8 +14,6 @@ interface QueryInputProps {
   handleStopQuery: () => void;
   query_length: number;
   currentStatus: string;
-  addDisplacement: (value: number) => void;
-  addDistortion: (value: number) => void;
   selectSettings: () => void;
   isAdmin: boolean;
 }
@@ -25,8 +23,6 @@ const QueryInput: React.FC<QueryInputProps> = ({
   handleStopQuery,
   query_length,
   currentStatus,
-  addDisplacement,
-  addDistortion,
   selectSettings,
   isAdmin,
 }) => {
@@ -41,11 +37,6 @@ const QueryInput: React.FC<QueryInputProps> = ({
     handleSendQuery(_query, route, mimick);
     setQuery("");
   };
-
-  useEffect(() => {
-    addDisplacement(0.035);
-    addDistortion(0.02);
-  }, [query]);
 
   return (
     <div

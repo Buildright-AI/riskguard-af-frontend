@@ -52,8 +52,6 @@ interface RenderChatProps {
     queryId: string,
     feedback: number
   ) => void;
-  addDisplacement: (value: number) => void;
-  addDistortion: (value: number) => void;
   handleSendQuery: (query: string, route?: string, mimick?: boolean) => void;
   isLastQuery: boolean;
 }
@@ -70,8 +68,6 @@ const RenderChat: React.FC<RenderChatProps> = ({
   NER,
   feedback,
   updateFeedback,
-  addDisplacement,
-  addDistortion,
   handleSendQuery,
   isLastQuery,
 }) => {
@@ -95,13 +91,11 @@ const RenderChat: React.FC<RenderChatProps> = ({
   useEffect(() => {
     const filtered_messages = filterMessages(messages);
     setDisplayMessages(filtered_messages);
-    addDisplacement(0.1);
-    addDistortion(0.08);
     if (process.env.NODE_ENV === "development") {
       console.log(messages);
     }
     buildRefMap(filtered_messages);
-  }, [messages, addDisplacement, addDistortion]);
+  }, [messages]);
 
   const processedOutputItems = React.useMemo(() => {
     const output: (
