@@ -50,6 +50,7 @@ export const ConversationContext = createContext<{
   removeConversation: (conversation_id: string) => Promise<void>;
   selectConversation: (id: string) => void;
   setConversationStatus: (status: string, conversationId: string) => void;
+  cancelQuery: (conversationId: string) => void;
   handleConversationError: (conversationId: string) => void;
   addMessageToConversation: (
     messages: Message[],
@@ -111,6 +112,7 @@ export const ConversationContext = createContext<{
   removeConversation: () => Promise.resolve(),
   selectConversation: () => {},
   setConversationStatus: () => {},
+  cancelQuery: () => {},
   setAllConversationStatuses: () => {},
   addMessageToConversation: () => {},
   initializeEnabledCollections: () => {},
@@ -337,6 +339,11 @@ export const ConversationProvider = ({
         return c;
       })
     );
+  };
+
+  const cancelQuery = (conversationId: string) => {
+    // Immediately clear status for instant UI response
+    setConversationStatus("", conversationId);
   };
 
   const setConversationTitle = async (
@@ -806,6 +813,9 @@ export const ConversationProvider = ({
         message.conversation_id,
         message.query_id
       );
+    } else if (message.type === "cancelled") {
+      setConversationStatus("", message.conversation_id);
+      finishQuery(message.conversation_id, message.query_id);
     } else if (message.type === "tree_update") {
       updateTree(message);
     } else {
@@ -949,6 +959,7 @@ export const ConversationProvider = ({
         removeConversation,
         selectConversation,
         setConversationStatus,
+        cancelQuery,
         setAllConversationStatuses,
         addMessageToConversation,
         initializeEnabledCollections,

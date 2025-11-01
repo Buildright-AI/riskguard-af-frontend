@@ -19,6 +19,16 @@ export async function saveConfig(
       };
     }
 
+    // Validate that config has a valid ID before attempting to save
+    if (!backend_config.id) {
+      return {
+        error: "Cannot save config: Missing config ID. Please create a new config first.",
+        config: null,
+        frontend_config: null,
+        warnings: [],
+      };
+    }
+
     const response = await fetchWithAuth(
       `/user/config/${backend_config.id}`,
       {

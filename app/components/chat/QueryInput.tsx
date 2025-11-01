@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { FaCircle } from "react-icons/fa";
-import { IoArrowUpCircleSharp, IoClose } from "react-icons/io5";
+import { IoArrowUpCircleSharp, IoClose, IoStopCircle } from "react-icons/io5";
 import { RiFlowChart } from "react-icons/ri";
 import { FaTrash } from "react-icons/fa";
 import CollectionSelection from "./components/CollectionSelection";
@@ -11,6 +11,7 @@ import { TbSettings } from "react-icons/tb";
 
 interface QueryInputProps {
   handleSendQuery: (query: string, route?: string, mimick?: boolean) => void;
+  handleStopQuery: () => void;
   query_length: number;
   currentStatus: string;
   addDisplacement: (value: number) => void;
@@ -21,6 +22,7 @@ interface QueryInputProps {
 
 const QueryInput: React.FC<QueryInputProps> = ({
   handleSendQuery,
+  handleStopQuery,
   query_length,
   currentStatus,
   addDisplacement,
@@ -154,13 +156,23 @@ const QueryInput: React.FC<QueryInputProps> = ({
               </Button>
             )}
             <CollectionSelection />
-            <Button
-              variant="ghost"
-              size={"icon"}
-              onClick={() => triggerQuery(query)}
-            >
-              <IoArrowUpCircleSharp size={16} />
-            </Button>
+            {currentStatus !== "" ? (
+              <Button
+                variant="ghost"
+                size={"icon"}
+                onClick={handleStopQuery}
+              >
+                <IoStopCircle size={16} />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size={"icon"}
+                onClick={() => triggerQuery(query)}
+              >
+                <IoArrowUpCircleSharp size={16} />
+              </Button>
+            )}
           </div>
         </div>
       </div>

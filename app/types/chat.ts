@@ -28,6 +28,7 @@ export type Message = {
     | "decision"
     | "status"
     | "completed"
+    | "cancelled"
     | "warning"
     | "tree_update"
     | "training_update"
