@@ -38,7 +38,7 @@ const DataSubMenu: React.FC = () => {
           </SidebarMenuButton>
           <SidebarMenuButton variant="default">
             <TbPackageImport />
-            <p>Import Data (Coming Soon)</p>
+            <p>Import Data</p>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarGroupContent>
