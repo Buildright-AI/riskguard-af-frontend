@@ -4,6 +4,7 @@ import "./globals.css";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import AuthenticatedLayout from "./components/layouts/AuthenticatedLayout";
+import { ThemeProvider } from "./components/contexts/ThemeContext";
 
 const space_grotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -38,9 +39,11 @@ export default function RootLayout({
         <body
           className={`bg-background h-screen w-screen overflow-hidden ${space_grotesk.variable} ${manrope.variable} font-text antialiased flex`}
         >
-          <Suspense fallback={<div>Loading...</div>}>
-            <AuthenticatedLayout>{children}</AuthenticatedLayout>
-          </Suspense>
+          <ThemeProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <AuthenticatedLayout>{children}</AuthenticatedLayout>
+            </Suspense>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
