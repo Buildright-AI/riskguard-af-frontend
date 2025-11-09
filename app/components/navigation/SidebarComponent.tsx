@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useState } from "react";
 
 import { SocketContext } from "../contexts/SocketContext";
 
-import { MdChatBubbleOutline } from "react-icons/md";
+import { MdChatBubbleOutline, MdOutlineDashboard } from "react-icons/md";
 import { GoDatabase } from "react-icons/go";
 import { AiOutlineExperiment } from "react-icons/ai";
 import { FaCircle } from "react-icons/fa6";
@@ -72,7 +72,7 @@ const SidebarComponent: React.FC = () => {
   >([]);
 
   useEffect(() => {
-    // Always show Chat section
+    // Always show Dashboard and Chat sections
     const _items: {
       title: string;
       mode: string[];
@@ -81,6 +81,12 @@ const SidebarComponent: React.FC = () => {
       loading?: boolean;
       onClick: () => void;
     }[] = [
+      {
+        title: "Dashboard",
+        mode: ["dashboard"],
+        icon: <MdOutlineDashboard />,
+        onClick: () => changePage("dashboard", {}, true, unsavedChanges),
+      },
       {
         title: "Chat",
         mode: ["chat"],
