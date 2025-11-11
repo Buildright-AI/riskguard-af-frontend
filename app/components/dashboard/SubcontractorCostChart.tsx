@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { DeviationRecord, SubcontractorCostData } from '@/app/types/dashboard';
@@ -13,19 +14,25 @@ import {
   formatCurrency,
 } from '@/lib/constants/dashboardConfig';
 
+type GroupByType = 'subcontractor' | 'installationType';
+
 interface SubcontractorCostChartProps {
   deviations: DeviationRecord[];
 }
 
 const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviations }) => {
+  const [groupBy, setGroupBy] = useState<GroupByType>('installationType');
+
   const chartData = useMemo(() => {
-    // Group by company and calculate metrics
-    const companyMap = new Map<string, SubcontractorCostData>();
+    // Group by selected field (company or installationType) and calculate metrics
+    const dataMap = new Map<string, SubcontractorCostData>();
 
     deviations.forEach((dev) => {
-      if (!companyMap.has(dev.company)) {
-        companyMap.set(dev.company, {
-          company: dev.company,
+      const key = groupBy === 'subcontractor' ? dev.company : dev.installationType;
+
+      if (!dataMap.has(key)) {
+        dataMap.set(key, {
+          company: key, // Using 'company' field for both types
           totalCost: 0,
           deviationCount: 0,
           avgResolutionDays: 0,
@@ -33,14 +40,14 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
         });
       }
 
-      const data = companyMap.get(dev.company)!;
+      const data = dataMap.get(key)!;
       data.totalCost += dev.estimatedCost;
       data.deviationCount += 1;
       data.avgResolutionDays += dev.resolutionDays;
       data.avgSeverity += getSeverityScore(dev.severity);
     });
 
-    const companies = Array.from(companyMap.values())
+    const aggregatedData = Array.from(dataMap.values())
       .map((data) => ({
         ...data,
         avgResolutionDays: data.avgResolutionDays / data.deviationCount,
@@ -49,8 +56,8 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
       .sort((a, b) => b.totalCost - a.totalCost)
       .slice(0, DISPLAY_LIMITS.topCompanies);
 
-    return companies;
-  }, [deviations]);
+    return aggregatedData;
+  }, [deviations, groupBy]);
 
   const chartConfig = {
     totalCost: {
@@ -107,19 +114,36 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
   const topCompanies = chartData.slice(0, 3);
   const totalCostAll = chartData.reduce((sum, c) => sum + c.totalCost, 0);
 
+  const chartTitle = groupBy === 'subcontractor' ? 'Subcontractor Cost Impact' : 'Cost Impact by Installation Type';
+  const chartDescription = groupBy === 'subcontractor'
+    ? 'Companies ranked by estimated deviation costs (color indicates avg severity)'
+    : 'Installation types ranked by estimated deviation costs (color indicates avg severity)';
+  const statsTitle = groupBy === 'subcontractor' ? 'Top 3 Cost Drivers' : 'Top 3 Cost Drivers by Type';
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>
-          <div className="w-full flex items-start justify-between">
-            <p>Subcontractor Cost Impact</p>
-            <div className="text-sm font-normal text-secondary">
-              Top {DISPLAY_LIMITS.topCompanies} by Total Cost
+          <div className="w-full flex items-start justify-between gap-4">
+            <p>{chartTitle}</p>
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-normal text-secondary">
+                Top {DISPLAY_LIMITS.topCompanies} by Total Cost
+              </div>
+              <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupByType)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Group by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="installationType">Installation Type</SelectItem>
+                  <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardTitle>
         <CardDescription>
-          Companies ranked by estimated deviation costs (color indicates avg severity)
+          {chartDescription}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
@@ -166,7 +190,7 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
         {/* Stats Sidebar */}
         <div className="w-full lg:w-1/3 flex flex-col gap-3 border border-secondary/20 rounded-md p-4">
           <h4 className="font-heading font-semibold text-sm text-primary mb-2">
-            Top 3 Cost Drivers
+            {statsTitle}
           </h4>
           {topCompanies.map((company, idx) => (
             <div
@@ -205,7 +229,9 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
 
           <div className="mt-auto pt-3 border-t border-secondary/20">
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-secondary">Total (All Companies)</span>
+              <span className="text-xs text-secondary">
+                {groupBy === 'subcontractor' ? 'Total (All Companies)' : 'Total (All Types)'}
+              </span>
               <span className="text-lg font-bold text-primary font-heading">
                 {formatCurrency(totalCostAll)} NOK
               </span>

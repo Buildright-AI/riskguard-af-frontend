@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { DeviationRecord, DeviationCategoryData } from '@/app/types/dashboard';
-import { DISPLAY_LIMITS, getCategoryColor } from '@/lib/constants/dashboardConfig';
+import { DISPLAY_LIMITS, getInstallationTypeColor } from '@/lib/constants/dashboardConfig';
 
 interface DeviationCategoryChartProps {
   deviations: DeviationRecord[];
@@ -13,20 +13,20 @@ interface DeviationCategoryChartProps {
 
 const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviations }) => {
   const { chartData, statsData } = useMemo(() => {
-    // Group by category
-    const categoryMap = new Map<string, DeviationCategoryData>();
+    // Group by installation type
+    const installationTypeMap = new Map<string, DeviationCategoryData>();
 
     deviations.forEach((dev) => {
-      if (!categoryMap.has(dev.category)) {
-        categoryMap.set(dev.category, {
-          category: dev.category,
+      if (!installationTypeMap.has(dev.installationType)) {
+        installationTypeMap.set(dev.installationType, {
+          category: dev.installationType, // Using 'category' field for consistency with interface
           withEconomicImpact: 0,
           withoutEconomicImpact: 0,
           totalCount: 0,
         });
       }
 
-      const data = categoryMap.get(dev.category)!;
+      const data = installationTypeMap.get(dev.installationType)!;
       if (dev.hasEconomicImpact) {
         data.withEconomicImpact += 1;
       } else {
@@ -35,20 +35,20 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
       data.totalCount += 1;
     });
 
-    const categories = Array.from(categoryMap.values())
+    const installationTypes = Array.from(installationTypeMap.values())
       .sort((a, b) => b.totalCount - a.totalCount);
 
     // Prepare data for pie chart
-    const pieData = categories.map((cat) => ({
-      name: cat.category,
-      value: cat.totalCount,
-      withEconomicImpact: cat.withEconomicImpact,
-      percentage: (cat.totalCount / deviations.length) * 100,
+    const pieData = installationTypes.map((type) => ({
+      name: type.category,
+      value: type.totalCount,
+      withEconomicImpact: type.withEconomicImpact,
+      percentage: (type.totalCount / deviations.length) * 100,
     }));
 
     return {
       chartData: pieData,
-      statsData: categories.slice(0, DISPLAY_LIMITS.topCategories),
+      statsData: installationTypes.slice(0, DISPLAY_LIMITS.topCategories),
     };
   }, [deviations]);
 
@@ -100,9 +100,9 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Deviation Category Breakdown</CardTitle>
+        <CardTitle>Installation Type Breakdown</CardTitle>
         <CardDescription>
-          Distribution of deviation types with economic impact highlighted
+          Distribution of deviations by installation type with economic impact highlighted
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
@@ -126,7 +126,7 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getCategoryColor(entry.name)}
+                      fill={getInstallationTypeColor(entry.name)}
                     />
                   ))}
                 </Pie>
@@ -145,7 +145,7 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
         {/* Stats Sidebar */}
         <div className="w-full lg:w-1/3 flex flex-col gap-3 border border-secondary/20 rounded-md p-4">
           <h4 className="font-heading font-semibold text-sm text-primary mb-2">
-            Top {DISPLAY_LIMITS.topCategories} Categories
+            Top {DISPLAY_LIMITS.topCategories} Installation Types
           </h4>
           {statsData.map((cat) => (
             <div
@@ -156,7 +156,7 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{
-                    backgroundColor: getCategoryColor(cat.category),
+                    backgroundColor: getInstallationTypeColor(cat.category),
                   }}
                 />
                 <span className="text-sm font-medium text-primary truncate">

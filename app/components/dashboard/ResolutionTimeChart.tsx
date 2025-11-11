@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { DeviationRecord, ResolutionTimeData } from '@/app/types/dashboard';
-import { DISPLAY_LIMITS, WORKFLOW_COLORS, WORKFLOW_STAGES, getWorkflowColor } from '@/lib/constants/dashboardConfig';
+import { DISPLAY_LIMITS, WORKFLOW_STAGES, getInstallationTypeColor } from '@/lib/constants/dashboardConfig';
 
 interface ResolutionTimeChartProps {
   deviations: DeviationRecord[];
@@ -13,8 +13,8 @@ interface ResolutionTimeChartProps {
 
 const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations }) => {
   const chartData = useMemo(() => {
-    // Group by category
-    const categoryMap = new Map<
+    // Group by installation type
+    const installationTypeMap = new Map<
       string,
       {
         resolutionDays: number[];
@@ -28,23 +28,23 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
     );
 
     resolvedDeviations.forEach((dev) => {
-      if (!categoryMap.has(dev.category)) {
-        categoryMap.set(dev.category, {
+      if (!installationTypeMap.has(dev.installationType)) {
+        installationTypeMap.set(dev.installationType, {
           resolutionDays: [],
           workflows: new Map(),
         });
       }
 
-      const data = categoryMap.get(dev.category)!;
+      const data = installationTypeMap.get(dev.installationType)!;
       data.resolutionDays.push(dev.resolutionDays);
 
       const workflowCount = data.workflows.get(dev.workflow) || 0;
       data.workflows.set(dev.workflow, workflowCount + 1);
     });
 
-    // Calculate metrics for each category
-    const categories: ResolutionTimeData[] = Array.from(categoryMap.entries())
-      .map(([category, data]) => {
+    // Calculate metrics for each installation type
+    const installationTypes: ResolutionTimeData[] = Array.from(installationTypeMap.entries())
+      .map(([installationType, data]) => {
         const sorted = [...data.resolutionDays].sort((a, b) => a - b);
         const avgDays = sorted.reduce((sum, d) => sum + d, 0) / sorted.length;
         const minDays = sorted[0];
@@ -62,7 +62,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
         });
 
         return {
-          category,
+          category: installationType, // Using 'category' field for consistency with interface
           avgDays,
           minDays,
           maxDays,
@@ -74,7 +74,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
       .sort((a, b) => b.avgDays - a.avgDays)
       .slice(0, DISPLAY_LIMITS.topResolutionCategories);
 
-    return categories;
+    return installationTypes;
   }, [deviations]);
 
   const chartConfig = {
@@ -133,9 +133,9 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Resolution Time Analysis</CardTitle>
+        <CardTitle>Resolution Time by Installation Type</CardTitle>
         <CardDescription>
-          Average days to close by category (color indicates primary workflow stage)
+          Average days to close by installation type (color-coded by type)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
@@ -169,7 +169,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getWorkflowColor(entry.primaryWorkflowStage)}
+                      fill={getInstallationTypeColor(entry.category)}
                     />
                   ))}
                 </Bar>
@@ -200,25 +200,15 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
             </div>
           )}
 
-          <div className="flex flex-col gap-1 pb-3 border-b border-secondary/20">
+          <div className="flex flex-col gap-1">
             <span className="text-xs text-secondary">Overall Average</span>
             <span className="text-2xl font-bold text-primary font-heading">
               {avgOverall.toFixed(1)}
               <span className="text-sm text-secondary ml-1">days</span>
             </span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-xs text-secondary mb-1">Workflow Legend</span>
-            {Object.entries(WORKFLOW_COLORS).map(([workflow, color]) => (
-              <div key={workflow} className="flex items-center gap-2 text-xs">
-                <div
-                  className="w-3 h-3 rounded flex-shrink-0"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-secondary">{workflow}</span>
-              </div>
-            ))}
+            <span className="text-xs text-secondary mt-2">
+              Across all installation types
+            </span>
           </div>
         </div>
       </CardContent>

@@ -86,6 +86,23 @@ export const DEVIATION_CATEGORIES = [
 ] as const;
 
 /**
+ * Installation types
+ * TODO: Replace with API call to fetch available installation types
+ */
+export const INSTALLATION_TYPES = [
+  '310 Grunnarbeider',
+  '320 Betongarbeider',
+  '330 Murerarbeider',
+  '340 Elektro bygg A-C',
+  '350 VVS',
+  '360 Ventilasjon',
+  '370 Tømrerarbeider',
+  '380 Malerarbeider',
+  '390 Gulvlegging',
+  '400 Stålarbeider',
+] as const;
+
+/**
  * Deviation status values
  */
 export const DEVIATION_STATUSES = [
@@ -144,6 +161,23 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Skader under byggetid': '#EF4444', // Red
   'Ferdigbefaring': '#10B981', // Emerald
   'Intern oppgave': '#6B7280', // Gray
+};
+
+/**
+ * Installation type colors
+ * Consistent colors used across all installation type charts
+ */
+export const INSTALLATION_TYPE_COLORS: Record<string, string> = {
+  '310 Grunnarbeider': '#8B4513', // SaddleBrown
+  '320 Betongarbeider': '#708090', // SlateGray
+  '330 Murerarbeider': '#CD853F', // Peru
+  '340 Elektro bygg A-C': '#FFD700', // Gold
+  '350 VVS': '#4682B4', // SteelBlue
+  '360 Ventilasjon': '#87CEEB', // SkyBlue
+  '370 Tømrerarbeider': '#D2691E', // Chocolate
+  '380 Malerarbeider': '#FF6347', // Tomato
+  '390 Gulvlegging': '#DEB887', // BurlyWood
+  '400 Stålarbeider': '#A9A9A9', // DarkGray
 };
 
 /**
@@ -292,6 +326,13 @@ export const getBottleneckColor = (avgHandovers: number): string => {
  */
 export const getCategoryColor = (category: string): string => {
   return CATEGORY_COLORS[category] || 'hsl(var(--secondary))';
+};
+
+/**
+ * Get installation type color with fallback
+ */
+export const getInstallationTypeColor = (installationType: string): string => {
+  return INSTALLATION_TYPE_COLORS[installationType] || 'hsl(var(--secondary))';
 };
 
 /**
