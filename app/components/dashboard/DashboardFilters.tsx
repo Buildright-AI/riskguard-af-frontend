@@ -10,24 +10,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { DashboardFilters as DashboardFiltersType, DateRangeFilter, ProjectName, SeverityLevel } from '@/app/types/dashboard';
+import { DashboardFilters as DashboardFiltersType, DateRangeFilter } from '@/app/types/dashboard';
 import { MdFilterList, MdClose } from 'react-icons/md';
 import {
   DATE_RANGE_OPTIONS,
-  PROJECTS,
-  SEVERITY_LEVELS,
-  SEVERITY_TEXT_COLORS,
 } from '@/lib/constants/dashboardConfig';
 
 interface DashboardFiltersProps {
   filters: DashboardFiltersType;
   onFilterChange: (filters: DashboardFiltersType) => void;
+  availableProjects: string[];
   disabled?: boolean;
 }
 
 const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   filters,
   onFilterChange,
+  availableProjects,
   disabled = false,
 }) => {
   const handleDateRangeChange = (range: DateRangeFilter) => {
@@ -37,7 +36,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     });
   };
 
-  const handleProjectToggle = (project: ProjectName) => {
+  const handleProjectToggle = (project: string) => {
     const newProjects = filters.projects.includes(project)
       ? filters.projects.filter((p) => p !== project)
       : [...filters.projects, project];
@@ -48,29 +47,16 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     });
   };
 
-  const handleSeverityToggle = (severity: SeverityLevel) => {
-    const newSeverities = filters.severities.includes(severity)
-      ? filters.severities.filter((s) => s !== severity)
-      : [...filters.severities, severity];
-
-    onFilterChange({
-      ...filters,
-      severities: newSeverities,
-    });
-  };
-
   const handleReset = () => {
     onFilterChange({
       dateRange: '30d',
       projects: [],
-      severities: [],
     });
   };
 
   const hasActiveFilters =
     filters.dateRange !== '30d' ||
-    filters.projects.length > 0 ||
-    filters.severities.length > 0;
+    filters.projects.length > 0;
 
   return (
     <Card className="w-full">
@@ -122,7 +108,7 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
             <PopoverContent className="w-64">
               <div className="flex flex-col gap-3">
                 <h4 className="font-heading font-semibold text-sm">Select Projects</h4>
-                {PROJECTS.map((project) => (
+                {availableProjects.map((project) => (
                   <div key={project} className="flex items-center gap-2">
                     <Checkbox
                       id={`project-${project}`}
@@ -134,45 +120,6 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                       className="text-sm cursor-pointer"
                     >
                       {project}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Severity Filter */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={disabled}
-                className="relative"
-              >
-                Severity
-                {filters.severities.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-accent text-background rounded-full">
-                    {filters.severities.length}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="flex flex-col gap-3">
-                <h4 className="font-heading font-semibold text-sm">Select Severity Levels</h4>
-                {SEVERITY_LEVELS.map((severity) => (
-                  <div key={severity} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`severity-${severity}`}
-                      checked={filters.severities.includes(severity)}
-                      onCheckedChange={() => handleSeverityToggle(severity)}
-                    />
-                    <Label
-                      htmlFor={`severity-${severity}`}
-                      className={`text-sm cursor-pointer ${SEVERITY_TEXT_COLORS[severity]}`}
-                    >
-                      {severity}
                     </Label>
                   </div>
                 ))}
@@ -208,14 +155,6 @@ const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   className="px-2 py-1 bg-foreground rounded text-primary text-xs"
                 >
                   {project}
-                </span>
-              ))}
-              {filters.severities.map((severity) => (
-                <span
-                  key={severity}
-                  className={`px-2 py-1 bg-foreground rounded text-xs ${SEVERITY_TEXT_COLORS[severity]}`}
-                >
-                  {severity}
                 </span>
               ))}
             </div>

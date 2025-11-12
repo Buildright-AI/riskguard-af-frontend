@@ -6,13 +6,14 @@ import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { DeviationRecord, WorkflowBottleneckData } from '@/app/types/dashboard';
 import { MdWarning } from 'react-icons/md';
-import { WORKFLOW_STAGES, TARGETS, getBottleneckColor } from '@/lib/constants/dashboardConfig';
+import { TARGETS, WORKFLOW_CALCULATION, getBottleneckColor } from '@/lib/constants/dashboardConfig';
 
 interface WorkflowBottleneckChartProps {
   deviations: DeviationRecord[];
+  availableWorkflows: string[];
 }
 
-const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ deviations }) => {
+const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ deviations, availableWorkflows }) => {
   const chartData = useMemo(() => {
     const workflowMap = new Map<string, {
       totalDays: number;
@@ -22,7 +23,7 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
     }>();
 
     // Initialize all workflows
-    WORKFLOW_STAGES.forEach((workflow) => {
+    availableWorkflows.forEach((workflow) => {
       workflowMap.set(workflow, {
         totalDays: 0,
         totalHandovers: 0,
@@ -37,8 +38,8 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
       const data = workflowMap.get(dev.workflow)!;
 
       // Estimate days in this stage (resolution days divided by number of workflow stages)
-      // This is a simplification for mockup data
-      const daysInStage = dev.resolutionDays / 3;
+      // Note: Simplified calculation since per-stage timing isn't available in current data
+      const daysInStage = dev.resolutionDays / WORKFLOW_CALCULATION.estimatedStagesCount;
 
       data.totalDays += daysInStage;
       data.totalHandovers += dev.handoverCount;
@@ -49,7 +50,7 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
       }
     });
 
-    const workflows: WorkflowBottleneckData[] = WORKFLOW_STAGES.map((workflow) => {
+    const workflows: WorkflowBottleneckData[] = availableWorkflows.map((workflow) => {
       const data = workflowMap.get(workflow)!;
       return {
         workflow,
@@ -61,7 +62,7 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
     });
 
     return workflows;
-  }, [deviations]);
+  }, [deviations, availableWorkflows]);
 
   const chartConfig = {
     avgDaysInStage: {

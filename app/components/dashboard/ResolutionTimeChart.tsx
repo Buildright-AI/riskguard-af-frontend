@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { DeviationRecord, ResolutionTimeData } from '@/app/types/dashboard';
-import { DISPLAY_LIMITS, WORKFLOW_STAGES, getInstallationTypeColor } from '@/lib/constants/dashboardConfig';
+import { DISPLAY_LIMITS, getDynamicColor } from '@/lib/constants/dashboardConfig';
 
 interface ResolutionTimeChartProps {
   deviations: DeviationRecord[];
@@ -52,7 +52,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
         const medianDays = sorted[Math.floor(sorted.length / 2)];
 
         // Find primary workflow (most common)
-        let primaryWorkflow: string = WORKFLOW_STAGES[2];
+        let primaryWorkflow: string = 'Unknown';
         let maxCount = 0;
         data.workflows.forEach((count, workflow) => {
           if (count > maxCount) {
@@ -169,7 +169,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getInstallationTypeColor(entry.category)}
+                      fill={getDynamicColor(index)}
                     />
                   ))}
                 </Bar>

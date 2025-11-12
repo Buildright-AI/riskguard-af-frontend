@@ -8,9 +8,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { DeviationRecord, SubcontractorCostData } from '@/app/types/dashboard';
 import {
   DISPLAY_LIMITS,
-  SEVERITY_SCORE_THRESHOLDS,
-  getSeverityScore,
-  categorizeSeverityScore,
   formatCurrency,
 } from '@/lib/constants/dashboardConfig';
 
@@ -36,7 +33,6 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
           totalCost: 0,
           deviationCount: 0,
           avgResolutionDays: 0,
-          avgSeverity: 0,
         });
       }
 
@@ -44,14 +40,12 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
       data.totalCost += dev.estimatedCost;
       data.deviationCount += 1;
       data.avgResolutionDays += dev.resolutionDays;
-      data.avgSeverity += getSeverityScore(dev.severity);
     });
 
     const aggregatedData = Array.from(dataMap.values())
       .map((data) => ({
         ...data,
         avgResolutionDays: data.avgResolutionDays / data.deviationCount,
-        avgSeverity: data.avgSeverity / data.deviationCount,
       }))
       .sort((a, b) => b.totalCost - a.totalCost)
       .slice(0, DISPLAY_LIMITS.topCompanies);
@@ -64,13 +58,6 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
       label: 'Total Cost',
       color: 'hsl(var(--accent))',
     },
-  };
-
-  const getBarColor = (avgSeverity: number) => {
-    if (avgSeverity >= SEVERITY_SCORE_THRESHOLDS.critical) return 'hsl(var(--error))';
-    if (avgSeverity >= SEVERITY_SCORE_THRESHOLDS.high) return 'hsl(var(--warning))';
-    if (avgSeverity >= SEVERITY_SCORE_THRESHOLDS.medium) return 'hsl(var(--highlight))';
-    return 'hsl(var(--accent))';
   };
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: SubcontractorCostData }[] }) => {
@@ -98,12 +85,6 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
                 {data.avgResolutionDays.toFixed(1)} days
               </span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-secondary">Avg Severity:</span>
-              <span className="text-primary font-medium">
-                {categorizeSeverityScore(data.avgSeverity)}
-              </span>
-            </div>
           </div>
         </div>
       );
@@ -116,8 +97,8 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
 
   const chartTitle = groupBy === 'subcontractor' ? 'Subcontractor Cost Impact' : 'Cost Impact by Installation Type';
   const chartDescription = groupBy === 'subcontractor'
-    ? 'Companies ranked by estimated deviation costs (color indicates avg severity)'
-    : 'Installation types ranked by estimated deviation costs (color indicates avg severity)';
+    ? 'Companies ranked by estimated deviation costs'
+    : 'Installation types ranked by estimated deviation costs';
   const statsTitle = groupBy === 'subcontractor' ? 'Top 3 Cost Drivers' : 'Top 3 Cost Drivers by Type';
 
   return (
@@ -174,14 +155,7 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
                   dataKey="totalCost"
                   radius={[0, 4, 4, 0]}
                   fill="hsl(var(--accent))"
-                >
-                  {chartData.map((entry, index) => (
-                    <rect
-                      key={`cell-${index}`}
-                      fill={getBarColor(entry.avgSeverity)}
-                    />
-                  ))}
-                </Bar>
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -199,17 +173,6 @@ const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviati
             >
               <div className="flex items-start justify-between">
                 <span className="text-xs text-accent font-bold">#{idx + 1}</span>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded ${
-                    company.avgSeverity >= SEVERITY_SCORE_THRESHOLDS.critical
-                      ? 'bg-error/20 text-error'
-                      : company.avgSeverity >= SEVERITY_SCORE_THRESHOLDS.high
-                      ? 'bg-warning/20 text-warning'
-                      : 'bg-highlight/20 text-highlight'
-                  }`}
-                >
-                  {categorizeSeverityScore(company.avgSeverity)}
-                </span>
               </div>
               <p className="text-sm font-medium text-primary truncate">
                 {company.company}

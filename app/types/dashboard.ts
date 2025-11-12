@@ -3,14 +3,11 @@
 // All types derived from single source of truth in dashboardConfig.ts
 
 import {
-  SEVERITY_LEVELS,
   DEVIATION_STATUSES,
-  PROJECTS,
 } from '@/lib/constants/dashboardConfig';
 
-export type SeverityLevel = typeof SEVERITY_LEVELS[number];
 export type DeviationStatus = typeof DEVIATION_STATUSES[number];
-export type ProjectName = typeof PROJECTS[number];
+export type ProjectName = string;
 
 // Core deviation record matching AF data structure
 export interface DeviationRecord {
@@ -19,7 +16,6 @@ export interface DeviationRecord {
   company: string;
   trade: string;
   category: string;
-  severity: SeverityLevel;
   hasEconomicImpact: boolean;
   hasScheduleImpact: boolean;
   estimatedCost: number; // NOK
@@ -37,7 +33,6 @@ export interface DeviationRecord {
 export interface DashboardFilters {
   dateRange: DateRangeFilter;
   projects: ProjectName[];
-  severities: SeverityLevel[];
   customStartDate?: Date;
   customEndDate?: Date;
 }
@@ -63,7 +58,6 @@ export interface SubcontractorCostData {
   totalCost: number;
   deviationCount: number;
   avgResolutionDays: number;
-  avgSeverity: number; // 1-4 for Low to Critical
 }
 
 // Deviation Category Chart
@@ -77,16 +71,6 @@ export interface DeviationCategoryData {
 export interface DeviationCategoryTimeData {
   month: string;
   [key: string]: number | string; // Dynamic keys for each category
-}
-
-// Risk Severity Trends
-export interface RiskSeverityTrendData {
-  week: string;
-  low: number;
-  medium: number;
-  high: number;
-  critical: number;
-  economicImpact: number;
 }
 
 // Resolution Time Chart

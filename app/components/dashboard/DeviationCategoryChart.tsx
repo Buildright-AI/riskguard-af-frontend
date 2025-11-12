@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { DeviationRecord, DeviationCategoryData } from '@/app/types/dashboard';
-import { DISPLAY_LIMITS, getInstallationTypeColor } from '@/lib/constants/dashboardConfig';
+import { DISPLAY_LIMITS, getDynamicColor } from '@/lib/constants/dashboardConfig';
 
 interface DeviationCategoryChartProps {
   deviations: DeviationRecord[];
@@ -51,6 +51,12 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
       statsData: installationTypes.slice(0, DISPLAY_LIMITS.topCategories),
     };
   }, [deviations]);
+
+  // Create color mapping for consistent colors across pie chart and legend
+  const getColorForCategory = (categoryName: string): string => {
+    const index = chartData.findIndex((item) => item.name === categoryName);
+    return getDynamicColor(index >= 0 ? index : 0);
+  };
 
   const chartConfig = {
     count: {
@@ -126,7 +132,7 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getInstallationTypeColor(entry.name)}
+                      fill={getDynamicColor(index)}
                     />
                   ))}
                 </Pie>
@@ -156,7 +162,7 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{
-                    backgroundColor: getInstallationTypeColor(cat.category),
+                    backgroundColor: getColorForCategory(cat.category),
                   }}
                 />
                 <span className="text-sm font-medium text-primary truncate">

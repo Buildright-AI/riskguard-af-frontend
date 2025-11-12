@@ -4,13 +4,11 @@
  * Central configuration file for all dashboard constants, colors, and thresholds.
  * This is the SINGLE SOURCE OF TRUTH for dashboard configuration.
  *
- * When connecting to real API:
- * - Keep this file (update with API-driven values where needed)
- * - Delete lib/mockData/dashboardData.ts
- * - Update DashboardPage.tsx to fetch from API instead of mock data
- *
  * NOTE: This file does NOT import types to avoid circular dependencies.
  * Types in app/types/dashboard.ts are derived FROM these constants.
+ *
+ * Business data (projects, workflows, categories, etc.) is fetched dynamically
+ * from the API via /api/dashboard/metadata endpoint.
  */
 
 // ============================================
@@ -32,75 +30,11 @@ export const getDateRangeInDays = (range: string): number => {
 };
 
 // ============================================
-// BUSINESS DATA (Temporary - will come from API)
+// BUSINESS DATA
 // ============================================
-
-/**
- * Project names
- * TODO: Replace with API call to fetch available projects
- */
-export const PROJECTS = [
-  'Brynsengfaret',
-  'Ensjoveien',
-  'Vision',
-  'Sjoparken',
-] as const;
-
-/**
- * Severity levels
- * Note: This is likely permanent as it's a business constant
- */
-export const SEVERITY_LEVELS = [
-  'Low',
-  'Medium',
-  'High',
-  'Critical',
-] as const;
-
-/**
- * Workflow stages
- * TODO: Replace with API call if workflows are project-specific
- */
-export const WORKFLOW_STAGES = [
-  '1. Planlegging',
-  '2. Utførelse',
-  '3. Kontroll',
-  '4. Befaringer',
-  '5. Lukking',
-] as const;
-
-/**
- * Deviation categories
- * TODO: Replace with API call to fetch available categories
- */
-export const DEVIATION_CATEGORIES = [
-  'Avvik',
-  'RTB',
-  'Statusbefaring',
-  'Forbefaring',
-  'RUH',
-  'Oppgave produksjon',
-  'Skader under byggetid',
-  'Ferdigbefaring',
-  'Intern oppgave',
-] as const;
-
-/**
- * Installation types
- * TODO: Replace with API call to fetch available installation types
- */
-export const INSTALLATION_TYPES = [
-  '310 Grunnarbeider',
-  '320 Betongarbeider',
-  '330 Murerarbeider',
-  '340 Elektro bygg A-C',
-  '350 VVS',
-  '360 Ventilasjon',
-  '370 Tømrerarbeider',
-  '380 Malerarbeider',
-  '390 Gulvlegging',
-  '400 Stålarbeider',
-] as const;
+// Note: Projects, workflows, categories, installation types, and companies
+// are now fetched dynamically from the API via /api/dashboard/metadata endpoint.
+// This eliminates hardcoded mock data and enables multi-tenant/multi-project support.
 
 /**
  * Deviation status values
@@ -117,68 +51,34 @@ export const DEVIATION_STATUSES = [
 // ============================================
 
 /**
- * Severity colors for charts (HSL format using CSS variables)
+ * Generic color palette for dynamic chart data
+ *
+ * This palette is used to assign colors to any dynamic data items
+ * (workflows, categories, installation types, etc.) based on their
+ * position in the data array, not hardcoded business values.
+ *
+ * Colors are carefully selected to be:
+ * - Visually distinct from each other
+ * - Accessible (good contrast)
+ * - Professional for business dashboards
  */
-export const SEVERITY_COLORS = {
-  Low: 'hsl(var(--accent))',
-  Medium: 'hsl(var(--highlight))',
-  High: 'hsl(var(--warning))',
-  Critical: 'hsl(var(--error))',
-} as const;
-
-/**
- * Severity colors for text (Tailwind classes)
- */
-export const SEVERITY_TEXT_COLORS = {
-  Low: 'text-accent',
-  Medium: 'text-warning',
-  High: 'text-error',
-  Critical: 'text-error font-bold',
-} as const;
-
-/**
- * Workflow stage colors
- */
-export const WORKFLOW_COLORS: Record<string, string> = {
-  '1. Planlegging': 'hsl(var(--accent))',
-  '2. Utførelse': 'hsl(var(--highlight))',
-  '3. Kontroll': 'hsl(var(--warning))',
-  '4. Befaringer': 'hsl(var(--warning))', // Using warning for consistency
-  '5. Lukking': 'hsl(var(--error))',
-};
-
-/**
- * Deviation category colors
- * Note: Using CSS variables where possible, fallback hex for specific needs
- */
-export const CATEGORY_COLORS: Record<string, string> = {
-  'Avvik': 'hsl(var(--error))',
-  'RTB': 'hsl(var(--warning))',
-  'Statusbefaring': 'hsl(var(--highlight))',
-  'Forbefaring': 'hsl(var(--accent))',
-  'RUH': '#8B5CF6', // Purple
-  'Oppgave produksjon': '#F59E0B', // Amber
-  'Skader under byggetid': '#EF4444', // Red
-  'Ferdigbefaring': '#10B981', // Emerald
-  'Intern oppgave': '#6B7280', // Gray
-};
-
-/**
- * Installation type colors
- * Consistent colors used across all installation type charts
- */
-export const INSTALLATION_TYPE_COLORS: Record<string, string> = {
-  '310 Grunnarbeider': '#8B4513', // SaddleBrown
-  '320 Betongarbeider': '#708090', // SlateGray
-  '330 Murerarbeider': '#CD853F', // Peru
-  '340 Elektro bygg A-C': '#FFD700', // Gold
-  '350 VVS': '#4682B4', // SteelBlue
-  '360 Ventilasjon': '#87CEEB', // SkyBlue
-  '370 Tømrerarbeider': '#D2691E', // Chocolate
-  '380 Malerarbeider': '#FF6347', // Tomato
-  '390 Gulvlegging': '#DEB887', // BurlyWood
-  '400 Stålarbeider': '#A9A9A9', // DarkGray
-};
+export const CHART_COLOR_PALETTE = [
+  '#4682B4', // SteelBlue
+  '#D2691E', // Chocolate
+  '#8B5CF6', // Purple
+  '#10B981', // Emerald
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#708090', // SlateGray
+  '#CD853F', // Peru
+  '#FF6347', // Tomato
+  '#87CEEB', // SkyBlue
+  '#8B4513', // SaddleBrown
+  '#FFD700', // Gold
+  '#DEB887', // BurlyWood
+  '#A9A9A9', // DarkGray
+  '#6B7280', // Gray
+] as const;
 
 /**
  * Bottleneck severity colors
@@ -226,21 +126,22 @@ export const TARGETS = {
 } as const;
 
 /**
- * Severity score thresholds
- * Used when converting severity to numeric (Low=1, Medium=2, High=3, Critical=4)
- */
-export const SEVERITY_SCORE_THRESHOLDS = {
-  critical: 3.5,
-  high: 2.5,
-  medium: 1.5,
-} as const;
-
-/**
  * Delay thresholds in days
  */
 export const DELAY_THRESHOLDS = {
   critical: 20,
   high: 12,
+} as const;
+
+/**
+ * Workflow calculation parameters
+ */
+export const WORKFLOW_CALCULATION = {
+  /**
+   * Estimated number of workflow stages for per-stage time calculation
+   * Used when actual per-stage timing data is not available
+   */
+  estimatedStagesCount: 3,
 } as const;
 
 // ============================================
@@ -281,32 +182,8 @@ export const DISPLAY_LIMITS = {
 } as const;
 
 // ============================================
-// LOADING & API CONFIGURATION
-// ============================================
-
-/**
- * Simulated API delay for mockup
- * TODO: Remove this when connecting real API
- */
-export const SIMULATED_API_DELAY_MS = 1500;
-
-// ============================================
 // UTILITY FUNCTIONS
 // ============================================
-
-/**
- * Get CSS color for a given severity level
- */
-export const getSeverityColor = (severity: string): string => {
-  return SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS] || 'hsl(var(--secondary))';
-};
-
-/**
- * Get text color class for a given severity level
- */
-export const getSeverityTextColor = (severity: string): string => {
-  return SEVERITY_TEXT_COLORS[severity as keyof typeof SEVERITY_TEXT_COLORS] || 'text-secondary';
-};
 
 /**
  * Get color for bottleneck based on average handovers
@@ -322,47 +199,28 @@ export const getBottleneckColor = (avgHandovers: number): string => {
 };
 
 /**
- * Get category color with fallback
+ * Get color for an item based on its index
+ *
+ * Cycles through CHART_COLOR_PALETTE if index exceeds palette size.
+ * This ensures every item gets a color, even if there are more items than colors.
  */
-export const getCategoryColor = (category: string): string => {
-  return CATEGORY_COLORS[category] || 'hsl(var(--secondary))';
+export const getDynamicColor = (index: number): string => {
+  return CHART_COLOR_PALETTE[index % CHART_COLOR_PALETTE.length];
 };
 
 /**
- * Get installation type color with fallback
+ * Get consistent color for an item based on its position in the full dataset
+ *
+ * This ensures the same item always gets the same color across different charts
+ * by using its index in the complete dataset, not just the filtered/limited view.
+ *
+ * @param item - The item to get a color for (e.g., installation type name)
+ * @param allItems - Complete array of all possible items (maintains consistency)
+ * @returns Hex color from palette
  */
-export const getInstallationTypeColor = (installationType: string): string => {
-  return INSTALLATION_TYPE_COLORS[installationType] || 'hsl(var(--secondary))';
-};
-
-/**
- * Get workflow color with fallback
- */
-export const getWorkflowColor = (workflow: string): string => {
-  return WORKFLOW_COLORS[workflow] || 'hsl(var(--secondary))';
-};
-
-/**
- * Convert severity to numeric score (1-4)
- */
-export const getSeverityScore = (severity: string): number => {
-  const scoreMap = {
-    Low: 1,
-    Medium: 2,
-    High: 3,
-    Critical: 4,
-  } as const;
-  return scoreMap[severity as keyof typeof scoreMap] || 0;
-};
-
-/**
- * Categorize severity based on average score
- */
-export const categorizeSeverityScore = (avgScore: number): string => {
-  if (avgScore >= SEVERITY_SCORE_THRESHOLDS.critical) return 'Critical';
-  if (avgScore >= SEVERITY_SCORE_THRESHOLDS.high) return 'High';
-  if (avgScore >= SEVERITY_SCORE_THRESHOLDS.medium) return 'Medium';
-  return 'Low';
+export const getColorForItem = (item: string, allItems: string[]): string => {
+  const index = allItems.indexOf(item);
+  return getDynamicColor(index >= 0 ? index : 0);
 };
 
 /**

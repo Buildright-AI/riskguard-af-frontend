@@ -7,6 +7,7 @@ import { useContext, useRef } from "react";
 import { ConversationContext } from "./ConversationContext";
 import { ToastContext } from "./ToastContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { useUniqueToast } from "@/lib/hooks/useUniqueToast";
 
 export const SocketContext = createContext<{
   socketOnline: boolean;
@@ -33,51 +34,37 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     handleWebsocketMessage,
   } = useContext(ConversationContext);
 
-  const { showErrorToast, showSuccessToast } = useContext(ToastContext);
+  const { showErrorToast } = useContext(ToastContext);
+  const { showUniqueSuccessToast } = useUniqueToast();
 
   // Get authentication token for WebSocket connection
   const { getAuthToken, isSignedIn } = useAuthenticatedFetch();
 
   const [socketOnline, setSocketOnline] = useState(false);
   const [socket, setSocket] = useState<WebSocket>();
-  const [reconnect, setReconnect] = useState(false);
-  const initialRef = useRef(false);
 
-  useEffect(() => {
-    setReconnect(true);
-  }, []);
+  // Track initialization state properly
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const initializationInProgress = useRef(false);
+  const reconnectAttempts = useRef(0);
 
+  // Initialize WebSocket connection when user signs in (only once initially)
   useEffect(() => {
-    if (!initialRef.current) {
+    // Guard: Only initialize once when user signs in
+    if (hasInitialized || initializationInProgress.current || !isSignedIn) {
       return;
     }
 
-    const interval = setInterval(() => {
-      if (!socketOnline || socket?.readyState === WebSocket.CLOSED || !socket) {
-        console.log("Elysia not online, trying to reconnect...");
-        initialRef.current = false;
-        setReconnect((prev) => !prev);
-      }
-    }, 5000);
+    initializationInProgress.current = true;
 
-    return () => clearInterval(interval);
-  }, [socketOnline, socket]);
-
-  useEffect(() => {
-    if (initialRef.current || !isSignedIn) {
-      return;
-    }
-
-    // Initialize WebSocket connection with JWT token
     const initializeSocket = async () => {
       try {
         const token = await getAuthToken();
         if (!token) {
           console.error("No authentication token available for WebSocket");
+          initializationInProgress.current = false;
           return;
         }
-
-        initialRef.current = true;
 
         // Append JWT token to WebSocket URL as query parameter
         const socketHost = getWebsocketHost() + `query?token=${encodeURIComponent(token)}`;
@@ -85,7 +72,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         localSocket.onopen = () => {
           setSocketOnline(true);
-          showSuccessToast("Connected to RiskGuard");
+          setHasInitialized(true);
+          initializationInProgress.current = false;
+          reconnectAttempts.current = 0;
+
+          // Use unique toast to prevent duplicates on initial connection
+          showUniqueSuccessToast("socket_connected", "Connected to RiskGuard");
+
           if (process.env.NODE_ENV === "development") {
             console.log("Socket opened");
           }
@@ -110,7 +103,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           setSocket(undefined);
           setAllConversationStatuses("");
           handleAllConversationsError();
-          showErrorToast("Connection to RiskGuard lost");
+          initializationInProgress.current = false;
+          // Only show error toast on subsequent errors, not initial connection
+          if (hasInitialized) {
+            showErrorToast("Connection to RiskGuard lost");
+          }
         };
 
         localSocket.onclose = () => {
@@ -118,7 +115,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           setAllConversationStatuses("");
           setSocket(undefined);
           handleAllConversationsError();
-          showErrorToast("Connection to RiskGuard lost");
+          initializationInProgress.current = false;
+
+          // Only show error toast if connection was previously established
+          if (hasInitialized) {
+            showErrorToast("Connection to RiskGuard lost");
+          }
+
           if (process.env.NODE_ENV === "development") {
             console.log("Socket closed");
           }
@@ -127,12 +130,34 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         setSocket(localSocket);
       } catch (error) {
         console.error("Failed to initialize WebSocket:", error);
-        initialRef.current = false;
+        initializationInProgress.current = false;
       }
     };
 
     initializeSocket();
-  }, [reconnect, isSignedIn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, hasInitialized]);
+
+  // Auto-reconnect logic - only after initial connection is established
+  useEffect(() => {
+    if (!hasInitialized) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (!socketOnline || socket?.readyState === WebSocket.CLOSED || !socket) {
+        if (reconnectAttempts.current < 10) {
+          console.log("Elysia not online, trying to reconnect...");
+          reconnectAttempts.current += 1;
+
+          // Reset hasInitialized to trigger reconnect
+          setHasInitialized(false);
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [socketOnline, socket, hasInitialized]);
 
   const sendQuery = async (
     query: string,

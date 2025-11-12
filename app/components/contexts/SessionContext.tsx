@@ -19,6 +19,7 @@ import { deleteConfig } from "@/app/api/deleteConfig";
 import { ToastContext } from "./ToastContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { useOrganization } from "@clerk/nextjs";
+import { useUniqueToast } from "@/lib/hooks/useUniqueToast";
 
 export const SessionContext = createContext<{
   mode: string;
@@ -75,8 +76,8 @@ export const SessionProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { showErrorToast, showSuccessToast, showWarningToast } =
-    useContext(ToastContext);
+  const { showErrorToast, showWarningToast, showSuccessToast } = useContext(ToastContext);
+  const { showUniqueSuccessToast } = useUniqueToast();
 
   const [mode, setMode] = useState<string>("home");
 
@@ -96,8 +97,12 @@ export const SessionProvider = ({
   const [loadingConfig, setLoadingConfig] = useState<boolean>(false);
   const [loadingConfigs, setLoadingConfigs] = useState<boolean>(false);
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
-  const initialized = useRef(false);
+
+  // Track initialization state properly to prevent duplicate calls
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const initializationInProgress = useRef(false);
   const autoLoadedDefault = useRef(false);
+
   const [fetchCollectionFlag, setFetchCollectionFlag] =
     useState<boolean>(false);
   const [fetchConversationFlag, setFetchConversationFlag] =
@@ -156,11 +161,18 @@ export const SessionProvider = ({
     setUnsavedChanges(unsaved);
   };
 
+  // Initialize user only once when auth is ready
   useEffect(() => {
-    if (initialized.current || !id || !orgLoaded) return;
+    // Guard: Check if already initialized or initialization in progress
+    if (isInitialized || initializationInProgress.current || !id || !orgLoaded) {
+      return;
+    }
+
+    // Mark as in progress immediately to prevent race conditions
+    initializationInProgress.current = true;
     initUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, orgLoaded]);
+  }, [id, orgLoaded, isInitialized]);
 
   useEffect(() => {
     if (pathname === "/") {
@@ -183,8 +195,8 @@ export const SessionProvider = ({
 
   // Auto-load default config after initialization (only once)
   useEffect(() => {
-    // Only run once after user is initialized and config list is loaded
-    if (!initialized.current || configIDs.length === 0 || !userConfig || autoLoadedDefault.current) {
+    // Guard: Only run once after user is initialized and config list is loaded
+    if (!isInitialized || configIDs.length === 0 || !userConfig || autoLoadedDefault.current) {
       return;
     }
 
@@ -195,13 +207,12 @@ export const SessionProvider = ({
     if (defaultConfig && userConfig.backend?.id !== defaultConfig.config_id) {
       console.log(`[SessionContext] Auto-loading default config: ${defaultConfig.name}`);
       handleLoadConfig(defaultConfig.config_id);
-      autoLoadedDefault.current = true; // Mark as done, won't run again
-    } else {
-      // If current config is already the default, mark as done
-      autoLoadedDefault.current = true;
     }
+
+    // Mark as done regardless of whether we loaded or not
+    autoLoadedDefault.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configIDs, userConfig]);
+  }, [isInitialized, configIDs, userConfig]);
 
   const initUser = async () => {
     const token = await getAuthToken();
@@ -222,6 +233,7 @@ export const SessionProvider = ({
         console.error(user_object.error);
         showErrorToast("Failed to Initialize User", user_object.error);
         setLoadingConfig(false);
+        initializationInProgress.current = false;
         return;
       }
 
@@ -236,8 +248,13 @@ export const SessionProvider = ({
       });
       setCorrectSettings(user_object.correct_settings);
       setLoadingConfig(false);
-      showSuccessToast("User Initialized");
-      initialized.current = true;
+
+      // Use unique toast to prevent duplicates on re-renders
+      showUniqueSuccessToast("user_initialized", "User Initialized");
+
+      // Mark as initialized
+      setIsInitialized(true);
+      initializationInProgress.current = false;
     } catch (error) {
       console.error("[SessionContext] initUser error:", error);
       showErrorToast(
@@ -245,6 +262,7 @@ export const SessionProvider = ({
         error instanceof Error ? error.message : "Unknown error occurred"
       );
       setLoadingConfig(false);
+      initializationInProgress.current = false;
     }
   };
 
@@ -300,10 +318,21 @@ export const SessionProvider = ({
       console.error(response.error);
       showErrorToast("Failed to Load Configuration", response.error);
     } else {
-      showSuccessToast(
-        "Configuration Loaded",
-        "Configuration loaded successfully."
-      );
+      // Use unique toast for auto-loaded config, regular toast for manual loads
+      // Auto-load is marked by autoLoadedDefault ref
+      if (autoLoadedDefault.current) {
+        showUniqueSuccessToast(
+          "config_loaded",
+          "Configuration Loaded",
+          "Configuration loaded successfully."
+        );
+      } else {
+        showUniqueSuccessToast(
+          `config_loaded_${config_id}`,
+          "Configuration Loaded",
+          "Configuration loaded successfully."
+        );
+      }
     }
     setUserConfig({
       backend: response.config,
@@ -424,7 +453,7 @@ export const SessionProvider = ({
         loadingConfigs,
         correctSettings,
         fetchCollectionFlag,
-        initialized: initialized.current,
+        initialized: isInitialized,
         triggerFetchCollection,
         triggerFetchConversation,
         fetchConversationFlag,

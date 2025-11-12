@@ -1,66 +1,46 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DeviationRecord } from '@/app/types/dashboard';
 import { MdTrendingUp, MdTrendingDown, MdRemove } from 'react-icons/md';
 import { TARGETS } from '@/lib/constants/dashboardConfig';
+import { DashboardKPIsPayload } from '@/app/types/payloads';
 
 interface DashboardKPIsProps {
-  deviations: DeviationRecord[];
+  kpiData: DashboardKPIsPayload['data'];
   className?: string;
 }
 
-const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ deviations, className = '' }) => {
-  const kpiData = useMemo(() => {
-    const total = deviations.length;
-
-    // Calculate trend: compare last 30 days vs previous 30 days
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-
-    const last30Days = deviations.filter((d) => d.date >= thirtyDaysAgo).length;
-    const previous30Days = deviations.filter(
-      (d) => d.date >= sixtyDaysAgo && d.date < thirtyDaysAgo
-    ).length;
-
-    const trend = previous30Days > 0
-      ? ((last30Days - previous30Days) / previous30Days) * 100
-      : 0;
-
-    // Active cost drivers (economic impact)
-    const activeCostDrivers = deviations.filter(
-      (d) => d.hasEconomicImpact && (d.status === 'Open' || d.status === 'In Progress')
-    ).length;
-
-    // Average resolution time
-    const resolvedDeviations = deviations.filter(
-      (d) => d.status === 'Resolved' || d.status === 'Closed'
+const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ kpiData, className = '' }) => {
+  // Early return with empty state if no data
+  if (!kpiData) {
+    return (
+      <div className={`w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="opacity-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-secondary">Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary font-heading">--</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
-    const avgResolutionTime = resolvedDeviations.length > 0
-      ? resolvedDeviations.reduce((sum, d) => sum + d.resolutionDays, 0) / resolvedDeviations.length
-      : 0;
+  }
 
-    const resolutionComparison = avgResolutionTime - TARGETS.resolutionDays;
+  // Extract KPI values from API response
+  const {
+    total,
+    trend,
+    activeCostDrivers,
+    avgResolutionTime,
+    overdueCount,
+  } = kpiData;
 
-    // Current overdue
-    const overdueDeviations = deviations.filter((d) => d.overdueDays > 0);
-    const currentOverdue = overdueDeviations.length;
-    const oldestOverdue = overdueDeviations.length > 0
-      ? Math.max(...overdueDeviations.map((d) => d.overdueDays))
-      : 0;
-
-    return {
-      total,
-      trend,
-      activeCostDrivers,
-      avgResolutionTime,
-      resolutionComparison,
-      currentOverdue,
-      oldestOverdue,
-    };
-  }, [deviations]);
+  // Calculate derived values for UI
+  const resolutionComparison = avgResolutionTime - TARGETS.resolutionDays;
 
   const getTrendIcon = (trend: number) => {
     if (trend > TARGETS.significantTrendPercent) return <MdTrendingUp className="text-error" />;
@@ -86,12 +66,12 @@ const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ deviations, className = '
         <CardContent>
           <div className="flex items-baseline justify-between">
             <p className="text-3xl font-bold text-primary font-heading">
-              {kpiData.total.toLocaleString()}
+              {total.toLocaleString()}
             </p>
-            <div className={`flex items-center gap-1 text-sm ${getTrendColor(kpiData.trend)}`}>
-              {getTrendIcon(kpiData.trend)}
+            <div className={`flex items-center gap-1 text-sm ${getTrendColor(trend)}`}>
+              {getTrendIcon(trend)}
               <span className="font-medium">
-                {Math.abs(kpiData.trend).toFixed(1)}%
+                {Math.abs(trend).toFixed(1)}%
               </span>
             </div>
           </div>
@@ -111,7 +91,7 @@ const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ deviations, className = '
         <CardContent>
           <div className="flex items-baseline justify-between">
             <p className="text-3xl font-bold text-warning font-heading">
-              {kpiData.activeCostDrivers}
+              {activeCostDrivers}
             </p>
             <div className="flex flex-col items-end text-xs text-secondary">
               <span>Economic</span>
@@ -134,21 +114,21 @@ const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ deviations, className = '
         <CardContent>
           <div className="flex items-baseline justify-between">
             <p className="text-3xl font-bold text-primary font-heading">
-              {kpiData.avgResolutionTime.toFixed(1)}
+              {avgResolutionTime.toFixed(1)}
               <span className="text-base text-secondary ml-1">days</span>
             </p>
             <div
               className={`flex items-center gap-1 text-sm ${
-                kpiData.resolutionComparison > 0 ? 'text-error' : 'text-accent'
+                resolutionComparison > 0 ? 'text-error' : 'text-accent'
               }`}
             >
-              {kpiData.resolutionComparison > 0 ? (
+              {resolutionComparison > 0 ? (
                 <MdTrendingUp />
               ) : (
                 <MdTrendingDown />
               )}
               <span className="font-medium">
-                {Math.abs(kpiData.resolutionComparison).toFixed(1)}
+                {Math.abs(resolutionComparison).toFixed(1)}
               </span>
             </div>
           </div>
@@ -168,12 +148,12 @@ const DashboardKPIs: React.FC<DashboardKPIsProps> = ({ deviations, className = '
         <CardContent>
           <div className="flex items-baseline justify-between">
             <p className="text-3xl font-bold text-error font-heading">
-              {kpiData.currentOverdue}
+              {overdueCount}
             </p>
             <div className="flex flex-col items-end text-xs text-secondary">
-              <span>Oldest:</span>
-              <span className="text-error font-medium">
-                {kpiData.oldestOverdue} days
+              <span className="text-secondary">
+                {/* TODO: Backend doesn't return oldestOverdue yet */}
+                Open items
               </span>
             </div>
           </div>

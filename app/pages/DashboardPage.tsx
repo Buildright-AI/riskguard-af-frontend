@@ -1,68 +1,198 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import DashboardFilters from '@/app/components/dashboard/DashboardFilters';
 import DashboardKPIs from '@/app/components/dashboard/DashboardKPIs';
 import SubcontractorCostChart from '@/app/components/dashboard/SubcontractorCostChart';
 import DeviationCategoryChart from '@/app/components/dashboard/DeviationCategoryChart';
-import RiskSeverityTrends from '@/app/components/dashboard/RiskSeverityTrends';
 import ResolutionTimeChart from '@/app/components/dashboard/ResolutionTimeChart';
 import WorkflowBottleneckChart from '@/app/components/dashboard/WorkflowBottleneckChart';
 import OverdueTrendsChart from '@/app/components/dashboard/OverdueTrendsChart';
 import InstallationDelayHeatmap from '@/app/components/dashboard/InstallationDelayHeatmap';
 import { DashboardFilters as DashboardFiltersType, DeviationRecord } from '@/app/types/dashboard';
-import { getMockDeviations, filterDeviations } from '@/lib/mockData/dashboardData'; // TODO: Replace with API client
-import { getDateRangeInDays, SIMULATED_API_DELAY_MS } from '@/lib/constants/dashboardConfig';
+import { getDateRangeInDays } from '@/lib/constants/dashboardConfig';
+import { getDashboardKPIs } from '@/app/api/getDashboardKPIs';
+import { getDashboardDeviations } from '@/app/api/getDashboardDeviations';
+import { getDashboardMetadata } from '@/app/api/getDashboardMetadata';
+import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
+import { DashboardKPIsPayload, DashboardMetadataPayload } from '@/app/types/payloads';
+import { SessionContext } from '@/app/components/contexts/SessionContext';
 
 const DashboardPage: React.FC = () => {
+  const { getAuthToken } = useAuthenticatedFetch();
+  const { initialized } = useContext(SessionContext);
   const [loading, setLoading] = useState(true);
+  const [kpiData, setKpiData] = useState<DashboardKPIsPayload['data']>(null);
+  const [kpiError, setKpiError] = useState<string | null>(null);
   const [allDeviations, setAllDeviations] = useState<DeviationRecord[]>([]);
+  const [metadata, setMetadata] = useState<DashboardMetadataPayload['data']>(null);
+  const [metadataLoading, setMetadataLoading] = useState(true);
   const [filters, setFilters] = useState<DashboardFiltersType>({
     dateRange: '30d',
     projects: [],
-    severities: [],
   });
 
-  // Simulate data loading on mount
-  // TODO: Replace with real API call when backend is ready
+  // Create stable filter keys for dependency tracking
+  const dateRangeKey = filters.dateRange;
+  const projectsKey = useMemo(() => JSON.stringify(filters.projects), [filters.projects]);
+
+  // Check for cache invalidation URL parameter
   useEffect(() => {
+    // Wait for user to be initialized before attempting cache invalidation
+    if (!initialized) {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const shouldInvalidateCache = searchParams.get('cache') === 'invalidate';
+
+    if (shouldInvalidateCache) {
+      const invalidateCache = async () => {
+        try {
+          const token = await getAuthToken();
+
+          // Call cache invalidation endpoint
+          await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/cache/invalidate`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+        } catch {
+          // Silent fail - cache invalidation is best-effort
+        } finally {
+          // Remove cache parameter from URL without page reload
+          searchParams.delete('cache');
+          const newUrl = `${window.location.pathname}${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+          window.history.replaceState({}, '', newUrl);
+        }
+      };
+
+      invalidateCache();
+    }
+  }, [initialized, getAuthToken]);
+
+  // Load metadata on mount (projects, workflows, categories, etc.)
+  useEffect(() => {
+    // Wait for user to be initialized before loading metadata
+    if (!initialized) {
+      return;
+    }
+
+    const loadMetadata = async () => {
+      try {
+        const token = await getAuthToken();
+        const response = await getDashboardMetadata(token || undefined);
+
+        if (response.data) {
+          setMetadata(response.data);
+        }
+      } catch {
+        // Error is silent - metadata will remain null and filters will be disabled
+      } finally {
+        setMetadataLoading(false);
+      }
+    };
+
+    loadMetadata();
+  }, [initialized, getAuthToken]);
+
+  // Load dashboard data on mount and when filters change
+  useEffect(() => {
+    // Wait for user to be initialized before loading dashboard data
+    if (!initialized) {
+      return;
+    }
+
+    // AbortController to cancel previous requests
+    const abortController = new AbortController();
+    let isActive = true;
+
     const loadData = async () => {
       setLoading(true);
-      // TODO: Remove simulated delay when connecting to real API
-      await new Promise((resolve) => setTimeout(resolve, SIMULATED_API_DELAY_MS));
-      // TODO: Replace getMockDeviations() with: await fetchDashboardData()
-      const deviations = getMockDeviations();
-      setAllDeviations(deviations);
-      setLoading(false);
+      setKpiError(null);
+
+      try {
+        const token = await getAuthToken();
+
+        // Calculate days from filter
+        const days = getDateRangeInDays(filters.dateRange);
+
+        // Fetch KPI data from API
+        const kpiResponse = await getDashboardKPIs(
+          {
+            days,
+            projects: filters.projects.length > 0 ? filters.projects : undefined,
+          },
+          token || undefined
+        );
+
+        // Check if request was cancelled
+        if (!isActive || abortController.signal.aborted) {
+          return;
+        }
+
+        if (kpiResponse.error) {
+          setKpiError(kpiResponse.error);
+        } else {
+          setKpiData(kpiResponse.data);
+        }
+
+        // Fetch deviation records for charts
+        const deviationsResponse = await getDashboardDeviations(
+          {
+            days,
+            projects: filters.projects.length > 0 ? filters.projects : undefined,
+          },
+          token || undefined
+        );
+
+        // Check if request was cancelled
+        if (!isActive || abortController.signal.aborted) {
+          return;
+        }
+
+        if (deviationsResponse.error) {
+          // Keep empty array on error to prevent chart crashes
+          setAllDeviations([]);
+        } else if (deviationsResponse.data) {
+          // Parse ISO date strings to Date objects for chart compatibility
+          const processedDeviations = deviationsResponse.data.map((d) => ({
+            ...d,
+            date: new Date(d.date)
+          }));
+          setAllDeviations(processedDeviations);
+        }
+      } catch {
+        // Ignore abort errors
+        if (!isActive || abortController.signal.aborted) {
+          return;
+        }
+        setKpiError('Failed to load dashboard data');
+      } finally {
+        if (isActive && !abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
     };
 
     loadData();
-  }, []);
 
-  // Apply filters to get filtered dataset
-  const filteredDeviations = useMemo(() => {
-    const now = new Date();
-    let dateRange: { start: Date; end: Date } | undefined;
+    // Cleanup: cancel request if component unmounts or dependencies change
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized, dateRangeKey, projectsKey, getAuthToken]);
 
-    if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) {
-      dateRange = {
-        start: filters.customStartDate,
-        end: filters.customEndDate,
-      };
-    } else if (filters.dateRange !== 'custom') {
-      const days = getDateRangeInDays(filters.dateRange);
-      const startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - days);
-      dateRange = { start: startDate, end: now };
-    }
-
-    return filterDeviations(allDeviations, {
-      dateRange,
-      projects: filters.projects.length > 0 ? filters.projects : undefined,
-      severities: filters.severities.length > 0 ? filters.severities : undefined,
-    });
-  }, [allDeviations, filters]);
+  // Backend already filtered by date range and projects
+  const filteredDeviations = allDeviations;
 
   const handleFilterChange = (newFilters: DashboardFiltersType) => {
     setFilters(newFilters);
@@ -83,7 +213,8 @@ const DashboardPage: React.FC = () => {
         <DashboardFilters
           filters={filters}
           onFilterChange={handleFilterChange}
-          disabled={loading}
+          availableProjects={metadata?.projects || []}
+          disabled={loading || metadataLoading}
         />
 
         {/* KPI Cards */}
@@ -93,8 +224,12 @@ const DashboardPage: React.FC = () => {
               <Skeleton key={i} className="h-[120px] w-full" />
             ))}
           </div>
+        ) : kpiError ? (
+          <div className="w-full p-4 bg-error/10 border border-error/20 rounded-md text-error">
+            Failed to load KPI data: {kpiError}
+          </div>
         ) : (
-          <DashboardKPIs deviations={filteredDeviations} className="fade-in" />
+          <DashboardKPIs kpiData={kpiData} className="fade-in" />
         )}
 
         {/* Cost Drivers Section */}
@@ -107,21 +242,15 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           <>
             <Skeleton className="h-[400px] w-full" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Skeleton className="h-[400px] w-full" />
-              <Skeleton className="h-[400px] w-full" />
-            </div>
+            <Skeleton className="h-[400px] w-full" />
           </>
         ) : (
           <div className="w-full flex flex-col gap-4 fade-in">
             {/* Subcontractor Cost Chart - Full Width */}
             <SubcontractorCostChart deviations={filteredDeviations} />
 
-            {/* Deviation Category & Risk Severity - Side by Side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <DeviationCategoryChart deviations={filteredDeviations} />
-              <RiskSeverityTrends deviations={filteredDeviations} />
-            </div>
+            {/* Deviation Category Chart */}
+            <DeviationCategoryChart deviations={filteredDeviations} />
           </div>
         )}
       </div>
@@ -147,7 +276,10 @@ const DashboardPage: React.FC = () => {
             {/* Resolution Time & Workflow Bottleneck - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <ResolutionTimeChart deviations={filteredDeviations} />
-              <WorkflowBottleneckChart deviations={filteredDeviations} />
+              <WorkflowBottleneckChart
+                deviations={filteredDeviations}
+                availableWorkflows={metadata?.workflows || []}
+              />
             </div>
 
             {/* Overdue Trends - Full Width */}

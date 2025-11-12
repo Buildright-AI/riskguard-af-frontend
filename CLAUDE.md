@@ -31,15 +31,19 @@ Frontend → Backend via REST + WebSocket
 
 ### Key Backend Routes
 ```
-/init/user              POST   - Initialize user, load default config
-/init/tree/{conv_id}    POST   - Create new conversation tree
-/user/config            GET    - Get current user config (in-memory)
-/user/config/list       GET    - List all saved configs
-/user/config/new        POST   - Create new config (returns ID)
-/user/config/{id}       POST   - Save config to Weaviate
-/user/config/{id}/load  GET    - Load config from Weaviate
-/tree/config/{conv_id}  GET    - Get conversation-specific config
-/ws/query               WS     - Query processing websocket
+/init/user                      POST   - Initialize user, load default config
+/init/tree/{conv_id}            POST   - Create new conversation tree
+/user/config                    GET    - Get current user config (in-memory)
+/user/config/list               GET    - List all saved configs
+/user/config/new                POST   - Create new config (returns ID)
+/user/config/{id}               POST   - Save config to Weaviate
+/user/config/{id}/load          GET    - Load config from Weaviate
+/tree/config/{conv_id}          GET    - Get conversation-specific config
+/ws/query                       WS     - Query processing websocket
+/api/dashboard/kpis             GET    - Dashboard KPIs (filtered)
+/api/dashboard/deviations       GET    - Dashboard deviation records
+/api/dashboard/metadata         GET    - Dashboard metadata (projects, workflows, etc.)
+/api/dashboard/cache/invalidate POST   - Invalidate dashboard cache
 ```
 
 ### State Hierarchy
@@ -98,17 +102,23 @@ app/components/contexts/
 
 app/pages/
 ├── ChatPage.tsx                # Main chat interface
-└── SettingsPage.tsx            # Config editor
+├── SettingsPage.tsx            # Config editor
+└── DashboardPage.tsx           # Analytics dashboard
 
 app/api/
 ├── createConfig.ts             # POST /user/config/new
 ├── saveConfig.ts               # POST /user/config/{id}
 ├── getConfigList.ts            # GET /user/config/list
-└── initializeTree.ts           # POST /init/tree/{id}
+├── initializeTree.ts           # POST /init/tree/{id}
+└── getDashboard*.ts            # Dashboard API endpoints
 
 app/types/
 ├── objects.ts                  # BackendConfig, FrontendConfig
-└── payloads.ts                 # API response types
+├── payloads.ts                 # API response types
+└── dashboard.ts                # Dashboard types
+
+docs/
+└── DASHBOARD_ARCHITECTURE.md   # Dashboard feature architecture
 ```
 
 ### Backend
@@ -118,11 +128,13 @@ elysia/api/routes/
 ├── user_config.py              # Config CRUD operations
 ├── tree_config.py              # Per-conversation configs
 ├── query.py                    # WebSocket query handler
-└── processor.py                # WebSocket response streaming
+├── processor.py                # WebSocket response streaming
+└── dashboard.py                # Dashboard API endpoints
 
 elysia/api/services/
 ├── user.py                     # UserManager class
-└── tree.py                     # TreeManager class
+├── tree.py                     # TreeManager class
+└── dashboard_queries.py        # Dashboard data aggregation
 
 elysia/config.py                # Settings (models, API keys)
 elysia/util/client.py           # ClientManager (model connections)
@@ -208,6 +220,17 @@ Vector databases that agents can query (e.g., document collections in Weaviate)
 - **In-memory**: UserManager holds current config
 - **Persisted**: Weaviate stores all saved configs
 - **Snapshot**: Each conversation stores its config independently
+
+### Dashboard Analytics
+Analytics dashboard for cost and delay analysis across projects:
+- **KPIs**: Total cost, avg resolution time, overdue reports, cost trends
+- **Cost Drivers**: Subcontractor costs, deviation categories
+- **Delay Drivers**: Resolution times, workflow bottlenecks, overdue trends, delay heatmaps
+- **Data Source**: Weaviate collections ending with `Reports` (e.g., `EnsjoveienReports`)
+- **Caching**: 2-hour TTL, project-scoped, thread-safe
+- **Filtering**: By date range (7/30/90/180 days) and projects
+
+See `docs/DASHBOARD_ARCHITECTURE.md` for detailed architecture, data flow, and implementation details.
 
 ## Authentication
 Clerk JWT tokens in Authorization header:
