@@ -13,7 +13,7 @@ interface ResolutionTimeChartProps {
 
 const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations }) => {
   const chartData = useMemo(() => {
-    // Group by installation type
+    // Group by work package (installationType field contains work package data)
     const installationTypeMap = new Map<
       string,
       {
@@ -42,7 +42,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
       data.workflows.set(dev.workflow, workflowCount + 1);
     });
 
-    // Calculate metrics for each installation type
+    // Calculate metrics for each work package
     const installationTypes: ResolutionTimeData[] = Array.from(installationTypeMap.entries())
       .map(([installationType, data]) => {
         const sorted = [...data.resolutionDays].sort((a, b) => a - b);
@@ -133,9 +133,9 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Resolution Time by Installation Type</CardTitle>
+        <CardTitle>Resolution Time by Work Package</CardTitle>
         <CardDescription>
-          Average days to close by installation type (color-coded by type)
+          Average days to close by work package (color-coded by type)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
@@ -207,7 +207,7 @@ const ResolutionTimeChart: React.FC<ResolutionTimeChartProps> = ({ deviations })
               <span className="text-sm text-secondary ml-1">days</span>
             </span>
             <span className="text-xs text-secondary mt-2">
-              Across all installation types
+              Across all work packages
             </span>
           </div>
         </div>

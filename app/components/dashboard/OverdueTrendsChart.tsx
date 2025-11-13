@@ -15,36 +15,39 @@ interface OverdueTrendsChartProps {
 const OverdueTrendsChart: React.FC<OverdueTrendsChartProps> = ({ deviations }) => {
   const chartData = useMemo(() => {
     const weeks: Date[] = [];
-    for (let i = DISPLAY_LIMITS.weeksToDisplay - 1; i >= 0; i--) {
-      weeks.push(startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 }));
-    }
+    const today = new Date();
 
-    // Track cumulative overdue count
-    let cumulativeOverdue = 0;
+    // Generate weeks from TODAY (not from last deviation date)
+    for (let i = DISPLAY_LIMITS.weeksToDisplay - 1; i >= 0; i--) {
+      weeks.push(startOfWeek(subWeeks(today, i), { weekStartsOn: 1 }));
+    }
 
     const weeklyData: OverdueTrendsData[] = weeks.map((weekStart) => {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      // Count new overdue reports in this week
-      // (reports that became overdue during this week)
+      // Count overdue deviations that were REPORTED in this week
+      // (not when they "became" overdue - that requires historical data we don't have)
       const newOverdueThisWeek = deviations.filter((d) => {
         if (d.overdueDays === 0) return false;
 
-        // Estimate when it became overdue
-        const becameOverdueDate = new Date(d.date);
-        becameOverdueDate.setDate(becameOverdueDate.getDate() + d.resolutionDays + d.overdueDays);
-
-        return becameOverdueDate >= weekStart && becameOverdueDate < weekEnd;
+        // Check if deviation was reported during this week
+        const deviationDate = new Date(d.date);
+        return deviationDate >= weekStart && deviationDate < weekEnd;
       }).length;
-
-      cumulativeOverdue += newOverdueThisWeek;
 
       return {
         week: format(weekStart, 'MMM dd'),
         newOverdue: newOverdueThisWeek,
-        totalOverdue: cumulativeOverdue,
+        totalOverdue: 0, // Will calculate cumulative below
       };
+    });
+
+    // Calculate cumulative overdue count across weeks
+    let cumulativeOverdue = 0;
+    weeklyData.forEach((week) => {
+      cumulativeOverdue += week.newOverdue;
+      week.totalOverdue = cumulativeOverdue;
     });
 
     return weeklyData;

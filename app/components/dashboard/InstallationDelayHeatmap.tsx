@@ -12,9 +12,13 @@ interface InstallationDelayHeatmapProps {
 
 const InstallationDelayHeatmap: React.FC<InstallationDelayHeatmapProps> = ({ deviations }) => {
   const { heatmapData, installationTypes, weeks, maxDelay } = useMemo(() => {
+    // Always calculate weeks from TODAY (not from last deviation date)
+    // This ensures weeks align with the selected date filter
     const weeksList: Date[] = [];
+    const today = new Date();
+
     for (let i = DISPLAY_LIMITS.heatmapWeeks - 1; i >= 0; i--) {
-      weeksList.push(startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 }));
+      weeksList.push(startOfWeek(subWeeks(today, i), { weekStartsOn: 1 }));
     }
 
     // Get unique installation types
@@ -106,9 +110,9 @@ const InstallationDelayHeatmap: React.FC<InstallationDelayHeatmapProps> = ({ dev
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Installation Type Delay Heatmap</CardTitle>
+        <CardTitle>Work Package Delay Heatmap</CardTitle>
         <CardDescription>
-          Average resolution days by installation type and week (color intensity indicates delay severity)
+          Average resolution days by work package and week (color intensity indicates delay severity)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
