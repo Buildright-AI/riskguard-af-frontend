@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useState } from "react";
 
 import { SocketContext } from "../contexts/SocketContext";
 
-import { MdChatBubbleOutline } from "react-icons/md";
+import { MdChatBubbleOutline, MdOutlineDashboard } from "react-icons/md";
 import { GoDatabase } from "react-icons/go";
 import { AiOutlineExperiment } from "react-icons/ai";
 import { FaCircle } from "react-icons/fa6";
@@ -15,6 +15,7 @@ import { IoLogOutOutline } from "react-icons/io5";
 import HomeSubMenu from "@/app/components/navigation/HomeSubMenu";
 import DataSubMenu from "@/app/components/navigation/DataSubMenu";
 import EvalSubMenu from "@/app/components/navigation/EvalSubMenu";
+import { ThemeToggle } from "@/app/components/navigation/ThemeToggle";
 
 import { useUser, useClerk, useOrganization } from "@clerk/nextjs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -34,10 +35,6 @@ import {
 
 import { Separator } from "@/components/ui/separator";
 
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import SettingsSubMenu from "./SettingsSubMenu";
 import { RouterContext } from "../contexts/RouterContext";
 import { CollectionContext } from "../contexts/CollectionContext";
@@ -72,7 +69,7 @@ const SidebarComponent: React.FC = () => {
   >([]);
 
   useEffect(() => {
-    // Always show Chat section
+    // Always show Dashboard and Chat sections
     const _items: {
       title: string;
       mode: string[];
@@ -81,6 +78,12 @@ const SidebarComponent: React.FC = () => {
       loading?: boolean;
       onClick: () => void;
     }[] = [
+      {
+        title: "Dashboard",
+        mode: ["dashboard"],
+        icon: <MdOutlineDashboard />,
+        onClick: () => changePage("dashboard", {}, true, unsavedChanges),
+      },
       {
         title: "Chat",
         mode: ["chat"],
@@ -145,16 +148,7 @@ const SidebarComponent: React.FC = () => {
             <p className="text-sm font-bold text-primary">RiskGuard</p>
           </div>
           <div className="flex items-center justify-center gap-1">
-            {socketOnline ? (
-              <FaCircle scale={0.2} className="text-lg pulsing_color w-5 h-5" />
-            ) : (
-              <FaCircle scale={0.2} className="text-lg pulsing w-5 h-5" />
-            )}
-            <div className="flex flex-col items-end">
-              <p className="text-xs text-muted-foreground">
-                v{packageJson.version}
-              </p>
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       </SidebarHeader>
@@ -236,13 +230,24 @@ const SidebarComponent: React.FC = () => {
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton onClick={() => openNewTab("https://buildright.ai")}>
-                  <p>Powered by Buildright</p>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-            </DropdownMenu>
+            <div className="flex items-center justify-between w-full px-2 py-2">
+              <button
+                onClick={() => openNewTab("https://buildright.ai")}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Powered by Buildright
+              </button>
+              <div className="flex items-center gap-1">
+                {socketOnline ? (
+                  <FaCircle scale={0.2} className="text-lg pulsing_color w-5 h-5" />
+                ) : (
+                  <FaCircle scale={0.2} className="text-lg pulsing w-5 h-5" />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  v{packageJson.version}
+                </p>
+              </div>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

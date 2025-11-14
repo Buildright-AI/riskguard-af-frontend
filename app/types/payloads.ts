@@ -95,3 +95,32 @@ export type MappingType = {
   description: string;
   fields: { [key: string]: string };
 };
+
+export type DashboardKPIsPayload = BasePayload & {
+  data: {
+    total: number;
+    trend: number;
+    activeCostDrivers: number;
+    avgResolutionTime: number;
+    overdueCount: number;
+    lastUpdated: string;
+  } | null;
+};
+
+export type DashboardDeviationsPayload = BasePayload & {
+  data: DeviationRecord[] | null;
+};
+
+export type DashboardMetadataPayload = BasePayload & {
+  data: {
+    projects: string[];
+    workflows: string[];
+    categories: string[];
+    installationTypes: string[];
+    companies: string[];
+    statuses: string[];
+  } | null;
+};
+
+// Import DeviationRecord type
+import { DeviationRecord } from './dashboard';

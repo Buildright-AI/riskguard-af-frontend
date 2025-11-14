@@ -1,0 +1,209 @@
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { DeviationRecord, SubcontractorCostData } from '@/app/types/dashboard';
+import {
+  DISPLAY_LIMITS,
+  formatCurrency,
+} from '@/lib/constants/dashboardConfig';
+
+type GroupByType = 'subcontractor' | 'installationType';
+
+interface SubcontractorCostChartProps {
+  deviations: DeviationRecord[];
+}
+
+const SubcontractorCostChart: React.FC<SubcontractorCostChartProps> = ({ deviations }) => {
+  const [groupBy, setGroupBy] = useState<GroupByType>('installationType');
+
+  const chartData = useMemo(() => {
+    // Group by selected field (company or installationType) and calculate metrics
+    const dataMap = new Map<string, SubcontractorCostData>();
+
+    deviations.forEach((dev) => {
+      const key = groupBy === 'subcontractor' ? dev.company : dev.installationType;
+
+      if (!dataMap.has(key)) {
+        dataMap.set(key, {
+          company: key, // Using 'company' field for both types
+          totalCost: 0,
+          deviationCount: 0,
+          avgResolutionDays: 0,
+        });
+      }
+
+      const data = dataMap.get(key)!;
+      data.totalCost += dev.estimatedCost;
+      data.deviationCount += 1;
+      data.avgResolutionDays += dev.resolutionDays;
+    });
+
+    const aggregatedData = Array.from(dataMap.values())
+      .map((data) => ({
+        ...data,
+        avgResolutionDays: data.avgResolutionDays / data.deviationCount,
+      }))
+      .sort((a, b) => b.totalCost - a.totalCost)
+      .slice(0, DISPLAY_LIMITS.topCompanies);
+
+    return aggregatedData;
+  }, [deviations, groupBy]);
+
+  const chartConfig = {
+    totalCost: {
+      label: 'Total Cost',
+      color: 'hsl(var(--accent))',
+    },
+  };
+
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: SubcontractorCostData }[] }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload as SubcontractorCostData;
+      return (
+        <div className="bg-background border border-secondary rounded-md p-3 shadow-lg">
+          <p className="font-heading font-semibold text-primary mb-2">
+            {data.company}
+          </p>
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-secondary">Total Cost:</span>
+              <span className="text-primary font-medium">
+                {data.totalCost.toLocaleString()} NOK
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-secondary">Deviations:</span>
+              <span className="text-primary font-medium">{data.deviationCount}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-secondary">Avg Resolution:</span>
+              <span className="text-primary font-medium">
+                {data.avgResolutionDays.toFixed(1)} days
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const topCompanies = chartData.slice(0, 3);
+  const totalCostAll = chartData.reduce((sum, c) => sum + c.totalCost, 0);
+
+  const chartTitle = groupBy === 'subcontractor' ? 'Subcontractor Cost Impact' : 'Cost Impact by Installation Type';
+  const chartDescription = groupBy === 'subcontractor'
+    ? 'Companies ranked by estimated deviation costs'
+    : 'Installation types ranked by estimated deviation costs';
+  const statsTitle = groupBy === 'subcontractor' ? 'Top 3 Cost Drivers' : 'Top 3 Cost Drivers by Type';
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>
+          <div className="w-full flex items-start justify-between gap-4">
+            <p>{chartTitle}</p>
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-normal text-secondary">
+                Top {DISPLAY_LIMITS.topCompanies} by Total Cost
+              </div>
+              <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupByType)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Group by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="installationType">Installation Type</SelectItem>
+                  <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardTitle>
+        <CardDescription>
+          {chartDescription}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex lg:flex-row flex-col gap-4">
+        {/* Chart */}
+        <div className="w-full lg:w-2/3">
+          <ChartContainer config={chartConfig} className="h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={formatCurrency}
+                  stroke="hsl(var(--secondary))"
+                />
+                <YAxis
+                  type="category"
+                  dataKey="company"
+                  width={150}
+                  stroke="hsl(var(--secondary))"
+                  tick={{ fontSize: 12 }}
+                />
+                <ChartTooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="totalCost"
+                  radius={[0, 4, 4, 0]}
+                  fill="hsl(var(--accent))"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </div>
+
+        {/* Stats Sidebar */}
+        <div className="w-full lg:w-1/3 flex flex-col gap-3 border border-secondary/20 rounded-md p-4">
+          <h4 className="font-heading font-semibold text-sm text-primary mb-2">
+            {statsTitle}
+          </h4>
+          {topCompanies.map((company, idx) => (
+            <div
+              key={company.company}
+              className="flex flex-col gap-1 pb-3 border-b border-secondary/20 last:border-b-0"
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-xs text-accent font-bold">#{idx + 1}</span>
+              </div>
+              <p className="text-sm font-medium text-primary truncate">
+                {company.company}
+              </p>
+              <div className="flex justify-between text-xs">
+                <span className="text-secondary">Cost:</span>
+                <span className="text-primary font-medium">
+                  {formatCurrency(company.totalCost)} NOK
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-secondary">Count:</span>
+                <span className="text-primary font-medium">{company.deviationCount}</span>
+              </div>
+            </div>
+          ))}
+
+          <div className="mt-auto pt-3 border-t border-secondary/20">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-secondary">
+                {groupBy === 'subcontractor' ? 'Total (All Companies)' : 'Total (All Types)'}
+              </span>
+              <span className="text-lg font-bold text-primary font-heading">
+                {formatCurrency(totalCostAll)} NOK
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default SubcontractorCostChart;

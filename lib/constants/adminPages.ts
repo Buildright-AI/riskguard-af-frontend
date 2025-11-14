@@ -18,6 +18,6 @@ export type AdminPage = typeof ADMIN_ONLY_PAGES[number]
  * All valid pages in the application.
  * Single source of truth for route validation.
  */
-export const VALID_PAGES = ['chat', ...ADMIN_ONLY_PAGES] as const
+export const VALID_PAGES = ['dashboard', 'chat', ...ADMIN_ONLY_PAGES] as const
 
 export type ValidPage = typeof VALID_PAGES[number]
