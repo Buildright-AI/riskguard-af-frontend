@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { useEffect } from "react";
 import SidebarComponent from "../navigation/SidebarComponent";
 import { SessionProvider } from "../contexts/SessionContext";
 import { CollectionProvider } from "../contexts/CollectionContext";
@@ -20,8 +21,18 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
   const isAuthPage = pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up");
+
+  // Client-side redirect if user is loaded but not signed in
+  // This acts as a safety net in case middleware redirect doesn't fire
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !isAuthPage) {
+      const redirectUrl = encodeURIComponent(window.location.href);
+      router.push(`/sign-in?redirect_url=${redirectUrl}`);
+    }
+  }, [isLoaded, isSignedIn, isAuthPage, router]);
 
   // For auth pages, render them immediately
   if (isAuthPage) {
@@ -29,7 +40,6 @@ export default function AuthenticatedLayout({
   }
 
   // For protected pages, prevent rendering until authenticated
-  // The middleware will handle redirecting to /sign-in
   if (!isLoaded || !isSignedIn) {
     return (
       <div className="flex flex-col w-screen h-screen items-center justify-center">

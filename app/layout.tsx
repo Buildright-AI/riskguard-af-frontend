@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import "./globals.css";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -40,9 +39,7 @@ export default function RootLayout({
           className={`bg-background h-screen w-screen overflow-hidden ${space_grotesk.variable} ${manrope.variable} font-text antialiased flex`}
         >
           <ThemeProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-              <AuthenticatedLayout>{children}</AuthenticatedLayout>
-            </Suspense>
+            <AuthenticatedLayout>{children}</AuthenticatedLayout>
           </ThemeProvider>
         </body>
       </html>
