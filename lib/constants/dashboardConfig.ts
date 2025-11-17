@@ -133,17 +133,6 @@ export const DELAY_THRESHOLDS = {
   high: 12,
 } as const;
 
-/**
- * Workflow calculation parameters
- */
-export const WORKFLOW_CALCULATION = {
-  /**
-   * Estimated number of workflow stages for per-stage time calculation
-   * Used when actual per-stage timing data is not available
-   */
-  estimatedStagesCount: 3,
-} as const;
-
 // ============================================
 // CHART CONFIGURATION
 // ============================================

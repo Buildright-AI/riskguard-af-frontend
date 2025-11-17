@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { DeviationRecord, WorkflowBottleneckData } from '@/app/types/dashboard';
-import { MdWarning } from 'react-icons/md';
-import { TARGETS, WORKFLOW_CALCULATION, getBottleneckColor } from '@/lib/constants/dashboardConfig';
+import { TARGETS, getBottleneckColor } from '@/lib/constants/dashboardConfig';
 
 interface WorkflowBottleneckChartProps {
   deviations: DeviationRecord[];
@@ -16,19 +15,15 @@ interface WorkflowBottleneckChartProps {
 const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ deviations, availableWorkflows }) => {
   const chartData = useMemo(() => {
     const workflowMap = new Map<string, {
-      totalDays: number;
+      resolutionDays: number[];
       totalHandovers: number;
-      count: number;
-      stuckCount: number;
     }>();
 
     // Initialize all workflows
     availableWorkflows.forEach((workflow) => {
       workflowMap.set(workflow, {
-        totalDays: 0,
+        resolutionDays: [],
         totalHandovers: 0,
-        count: 0,
-        stuckCount: 0,
       });
     });
 
@@ -37,36 +32,53 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
 
       const data = workflowMap.get(dev.workflow)!;
 
-      // Estimate days in this stage (resolution days divided by number of workflow stages)
-      // Note: Simplified calculation since per-stage timing isn't available in current data
-      const daysInStage = dev.resolutionDays / WORKFLOW_CALCULATION.estimatedStagesCount;
-
-      data.totalDays += daysInStage;
+      // Use actual resolution days - each workflow type is independent, not a sequential stage
+      data.resolutionDays.push(dev.resolutionDays);
       data.totalHandovers += dev.handoverCount;
-      data.count += 1;
-
-      if (dev.resolutionDays > TARGETS.stuckThresholdDays && (dev.status === 'Open' || dev.status === 'In Progress')) {
-        data.stuckCount += 1;
-      }
     });
 
     const workflows: WorkflowBottleneckData[] = availableWorkflows.map((workflow) => {
       const data = workflowMap.get(workflow)!;
+      const count = data.resolutionDays.length;
+
+      // Calculate median
+      let medianDays = 0;
+      if (count > 0) {
+        const sorted = [...data.resolutionDays].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        medianDays = sorted.length % 2 === 0
+          ? (sorted[mid - 1] + sorted[mid]) / 2
+          : sorted[mid];
+      }
+
+      // Calculate mean
+      const meanDays = count > 0
+        ? data.resolutionDays.reduce((sum, days) => sum + days, 0) / count
+        : 0;
+
       return {
         workflow,
-        avgDaysInStage: data.count > 0 ? data.totalDays / data.count : 0,
-        avgHandovers: data.count > 0 ? data.totalHandovers / data.count : 0,
-        stuckReports: data.stuckCount,
-        totalReports: data.count,
+        medianResolutionDays: medianDays,
+        meanResolutionDays: meanDays,
+        avgHandovers: count > 0 ? data.totalHandovers / count : 0,
+        stuckReports: 0, // Deprecated - keeping for interface compatibility
+        totalReports: count,
       };
     });
 
-    return workflows;
+    // Sort by median descending and filter out workflows with no reports
+    return workflows
+      .filter(w => w.totalReports > 0)
+      .sort((a, b) => b.medianResolutionDays - a.medianResolutionDays)
+      .slice(0, 15); // Top 15 workflows by median resolution time
   }, [deviations, availableWorkflows]);
 
   const chartConfig = {
-    avgDaysInStage: {
-      label: 'Avg Days in Stage',
+    medianResolutionDays: {
+      label: 'Median Resolution Days',
+    },
+    meanResolutionDays: {
+      label: 'Mean Resolution Days',
     },
   };
 
@@ -74,15 +86,21 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
     if (active && payload && payload.length) {
       const data = payload[0].payload as WorkflowBottleneckData;
       return (
-        <div className="bg-background border border-secondary rounded-md p-3 shadow-lg">
+        <div className="bg-background border border-secondary rounded-md p-3 shadow-lg max-w-sm">
           <p className="font-heading font-semibold text-primary mb-2">
             {data.workflow}
           </p>
           <div className="flex flex-col gap-1 text-sm">
             <div className="flex justify-between gap-4">
-              <span className="text-secondary">Avg Days:</span>
+              <span className="text-secondary">Median (typical):</span>
+              <span className="text-primary font-bold">
+                {data.medianResolutionDays.toFixed(1)} days
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-secondary">Mean (average):</span>
               <span className="text-primary font-medium">
-                {data.avgDaysInStage.toFixed(1)} days
+                {data.meanResolutionDays.toFixed(1)} days
               </span>
             </div>
             <div className="flex justify-between gap-4">
@@ -95,13 +113,13 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
               </span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-secondary">Stuck Reports:</span>
-              <span className="text-error font-medium">{data.stuckReports}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-secondary">Total Reports:</span>
+              <span className="text-secondary">Report Count:</span>
               <span className="text-primary font-medium">{data.totalReports}</span>
             </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-secondary/20 text-xs text-secondary">
+            <p className="mb-1"><strong>Median:</strong> Middle value, not affected by outliers (typical case)</p>
+            <p><strong>Mean:</strong> Average, affected by long delays (if mean {'>'} median = many outliers)</p>
           </div>
         </div>
       );
@@ -109,28 +127,21 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
     return null;
   };
 
-  const bottleneckStage = chartData.reduce((max, curr) =>
-    curr.avgHandovers > max.avgHandovers ? curr : max
-  , chartData[0]);
+  // Find workflow with highest median resolution time (actual bottleneck)
+  const bottleneckStage = chartData.length > 0
+    ? chartData.reduce((max, curr) =>
+        curr.medianResolutionDays > max.medianResolutionDays ? curr : max
+      )
+    : null;
 
-  const totalStuck = chartData.reduce((sum, w) => sum + w.stuckReports, 0);
+  const totalReports = chartData.reduce((sum, w) => sum + w.totalReports, 0);
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>
-          <div className="w-full flex items-start justify-between">
-            <p>Workflow Bottleneck Analysis</p>
-            {totalStuck > 0 && (
-              <div className="flex items-center gap-1 text-sm text-error">
-                <MdWarning />
-                <span>{totalStuck} stuck</span>
-              </div>
-            )}
-          </div>
-        </CardTitle>
+        <CardTitle>Workflow Resolution Time Analysis</CardTitle>
         <CardDescription>
-          Average time per stage with handover counts (color indicates bottleneck severity)
+          Median resolution time by workflow type (top 15, color indicates handover severity)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">
@@ -152,22 +163,23 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
                   stroke="hsl(var(--secondary))"
                 />
                 <YAxis
-                  label={{ value: 'Days', angle: -90, position: 'insideLeft' }}
+                  label={{ value: 'Median Days', angle: -90, position: 'insideLeft' }}
                   stroke="hsl(var(--secondary))"
                 />
                 <ChartTooltip content={<CustomTooltip />} />
                 <Bar
-                  dataKey="avgDaysInStage"
+                  dataKey="medianResolutionDays"
                   radius={[4, 4, 0, 0]}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={getBottleneckColor(entry.avgHandovers)} />
                   ))}
+                  {/* Report count labels */}
                   <LabelList
-                    dataKey="avgHandovers"
+                    dataKey="totalReports"
                     position="top"
-                    formatter={(value: number) => `${value.toFixed(1)} h/o`}
-                    style={{ fontSize: 10, fill: 'hsl(var(--secondary))' }}
+                    formatter={(value: number) => `n=${value}`}
+                    style={{ fontSize: 9, fill: 'hsl(var(--secondary))' }}
                   />
                 </Bar>
               </BarChart>
@@ -178,51 +190,35 @@ const WorkflowBottleneckChart: React.FC<WorkflowBottleneckChartProps> = ({ devia
         {/* Stats Sidebar */}
         <div className="w-full lg:w-1/3 flex flex-col gap-3 border border-secondary/20 rounded-md p-4">
           <h4 className="font-heading font-semibold text-sm text-primary mb-2">
-            Bottleneck Metrics
+            Workflow Metrics
           </h4>
 
           {bottleneckStage && (
             <div className="flex flex-col gap-1 pb-3 border-b border-secondary/20">
-              <span className="text-xs text-secondary">Biggest Bottleneck</span>
+              <span className="text-xs text-secondary">Slowest Workflow</span>
               <span className="text-sm font-medium text-primary">
                 {bottleneckStage.workflow}
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-bold text-error font-heading">
-                  {bottleneckStage.avgHandovers.toFixed(1)}
+                  {bottleneckStage.medianResolutionDays.toFixed(1)}
                 </span>
-                <span className="text-sm text-secondary">avg handovers</span>
+                <span className="text-sm text-secondary">median days</span>
               </div>
               <span className="text-xs text-secondary mt-1">
-                {bottleneckStage.avgDaysInStage.toFixed(1)} days average in stage
+                {bottleneckStage.avgHandovers.toFixed(1)} avg handovers • {bottleneckStage.totalReports} reports
               </span>
             </div>
           )}
 
-          <div className="flex flex-col gap-1 pb-3 border-b border-secondary/20">
-            <span className="text-xs text-secondary">Total Stuck Reports</span>
-            <span className="text-2xl font-bold text-error font-heading">
-              {totalStuck}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-secondary">Total Reports Analyzed</span>
+            <span className="text-2xl font-bold text-primary font-heading">
+              {totalReports}
             </span>
             <span className="text-xs text-secondary">
-              {">"}{TARGETS.stuckThresholdDays} days, not closed
+              across {chartData.length} workflow types
             </span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-xs text-secondary mb-1">Color Legend</span>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded bg-accent" />
-              <span className="text-secondary">{"<"}={TARGETS.moderateHandoverThreshold} handovers (Good)</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded bg-warning" />
-              <span className="text-secondary">{TARGETS.moderateHandoverThreshold + 1}-{TARGETS.criticalHandoverThreshold} handovers (Moderate)</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded bg-error" />
-              <span className="text-secondary">{">"}{TARGETS.criticalHandoverThreshold} handovers (Critical)</span>
-            </div>
           </div>
         </div>
       </CardContent>

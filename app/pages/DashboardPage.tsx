@@ -8,6 +8,7 @@ import SubcontractorCostChart from '@/app/components/dashboard/SubcontractorCost
 import DeviationCategoryChart from '@/app/components/dashboard/DeviationCategoryChart';
 import ResolutionTimeChart from '@/app/components/dashboard/ResolutionTimeChart';
 import WorkflowBottleneckChart from '@/app/components/dashboard/WorkflowBottleneckChart';
+import WorkflowImpactBubbleChart from '@/app/components/dashboard/WorkflowImpactBubbleChart';
 import OverdueTrendsChart from '@/app/components/dashboard/OverdueTrendsChart';
 import InstallationDelayHeatmap from '@/app/components/dashboard/InstallationDelayHeatmap';
 import { DashboardFilters as DashboardFiltersType, DeviationRecord } from '@/app/types/dashboard';
@@ -281,6 +282,12 @@ const DashboardPage: React.FC = () => {
                 availableWorkflows={metadata?.workflows || []}
               />
             </div>
+
+            {/* Workflow Impact Analysis - Full Width */}
+            <WorkflowImpactBubbleChart
+              deviations={filteredDeviations}
+              availableWorkflows={metadata?.workflows || []}
+            />
 
             {/* Overdue Trends - Full Width */}
             <OverdueTrendsChart deviations={filteredDeviations} />
