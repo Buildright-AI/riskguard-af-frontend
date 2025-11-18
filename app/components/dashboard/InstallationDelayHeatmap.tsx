@@ -112,7 +112,7 @@ const InstallationDelayHeatmap: React.FC<InstallationDelayHeatmapProps> = ({ dev
       <CardHeader>
         <CardTitle>Work Package Delay Heatmap</CardTitle>
         <CardDescription>
-          Average resolution days by work package and week (color intensity indicates delay severity)
+          Last 8 weeks - Average resolution days by work package and week (color intensity indicates delay severity)
         </CardDescription>
       </CardHeader>
       <CardContent className="flex lg:flex-row flex-col gap-4">

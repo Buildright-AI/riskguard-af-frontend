@@ -297,11 +297,16 @@ const DashboardPage: React.FC = () => {
               availableWorkflows={metadata?.workflows || []}
             />
 
-            {/* Overdue Trends - Full Width */}
-            <OverdueTrendsChart deviations={filteredDeviations} />
+            {/* Week-based charts (hidden for custom date ranges) */}
+            {filters.dateRange !== 'custom' && (
+              <>
+                {/* Overdue Trends - Full Width */}
+                <OverdueTrendsChart deviations={filteredDeviations} />
 
-            {/* Installation Delay Heatmap - Full Width */}
-            <InstallationDelayHeatmap deviations={filteredDeviations} />
+                {/* Installation Delay Heatmap - Full Width */}
+                <InstallationDelayHeatmap deviations={filteredDeviations} />
+              </>
+            )}
           </div>
         )}
       </div>
