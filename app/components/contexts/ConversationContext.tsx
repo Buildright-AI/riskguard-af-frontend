@@ -87,6 +87,7 @@ export const ConversationContext = createContext<{
   setAllConversationStatuses: (status: string) => void;
   startNewConversation: () => void;
   getAllEnabledCollections: () => string[];
+  getEnabledCollectionsForConversation: (conversationId: string) => string[];
   triggerAllCollections: (conversationId: string, enable: boolean) => void;
   handleAllConversationsError: () => void;
   conversationPreviews: { [key: string]: SavedTreeData };
@@ -130,6 +131,7 @@ export const ConversationContext = createContext<{
   handleAllConversationsError: () => {},
   addSuggestionToConversation: () => {},
   getAllEnabledCollections: () => [],
+  getEnabledCollectionsForConversation: () => [],
   loadConversationsFromDB: () => {},
 });
 
@@ -438,6 +440,16 @@ export const ConversationProvider = ({
         .map(([key]) => key);
       return [...acc, ...enabledCollectionNames];
     }, [] as string[]);
+  };
+
+  const getEnabledCollectionsForConversation = (conversationId: string) => {
+    const conversation = conversations.find((c) => c.id === conversationId);
+    if (!conversation || !conversation.enabled_collections) {
+      return [];
+    }
+    return Object.entries(conversation.enabled_collections)
+      .filter(([, value]) => value === true)
+      .map(([key]) => key);
   };
 
   const initializeEnabledCollections = (
@@ -981,6 +993,7 @@ export const ConversationProvider = ({
         handleAllConversationsError,
         addSuggestionToConversation,
         getAllEnabledCollections,
+        getEnabledCollectionsForConversation,
         loadConversationsFromDB,
         handleWebsocketMessage,
         loadingConversation,

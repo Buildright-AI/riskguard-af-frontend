@@ -30,7 +30,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     setConversationStatus,
     setAllConversationStatuses,
     handleAllConversationsError,
-    getAllEnabledCollections,
+    getEnabledCollectionsForConversation,
     handleWebsocketMessage,
   } = useContext(ConversationContext);
 
@@ -167,7 +167,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     mimick: boolean = false
   ) => {
     setConversationStatus("Thinking...", conversation_id);
-    const enabled_collections = getAllEnabledCollections();
+    const enabled_collections = getEnabledCollectionsForConversation(conversation_id);
 
     if (process.env.NODE_ENV === "development") {
       console.log(
