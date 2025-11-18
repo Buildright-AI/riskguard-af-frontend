@@ -20,13 +20,15 @@ export const DATE_RANGE_OPTIONS = [
   { value: '30d', label: 'Last 30 days', days: 30 },
   { value: '90d', label: 'Last 90 days', days: 90 },
   { value: '180d', label: 'Last 180 days', days: 180 },
+  { value: 'custom', label: 'Custom range', days: null },
 ] as const;
 
 export const DEFAULT_DATE_RANGE = '30d' as const;
 
 export const getDateRangeInDays = (range: string): number => {
   const config = DATE_RANGE_OPTIONS.find((r) => r.value === range);
-  return config?.days || 30;
+  // Return 30 as default, or if 'custom' range is selected (days: null)
+  return config?.days ?? 30;
 };
 
 // ============================================
