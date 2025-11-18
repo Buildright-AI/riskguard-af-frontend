@@ -4,6 +4,8 @@ import { fetchWithAuth } from "@/lib/api/client";
 export async function getDashboardDeviations(
   options?: {
     days?: number;
+    start_date?: string; // ISO format YYYY-MM-DD
+    end_date?: string;   // ISO format YYYY-MM-DD
     projects?: string[];
   },
   token?: string
@@ -12,9 +14,15 @@ export async function getDashboardDeviations(
   try {
     // Build query parameters
     const params = new URLSearchParams();
-    if (options?.days) {
+
+    // Custom date range takes precedence over days
+    if (options?.start_date && options?.end_date) {
+      params.append("start_date", options.start_date);
+      params.append("end_date", options.end_date);
+    } else if (options?.days) {
       params.append("days", options.days.toString());
     }
+
     if (options?.projects && options.projects.length > 0) {
       params.append("projects", options.projects.join(","));
     }

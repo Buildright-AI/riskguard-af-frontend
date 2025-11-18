@@ -38,13 +38,15 @@ const DeviationCategoryChart: React.FC<DeviationCategoryChartProps> = ({ deviati
     const installationTypes = Array.from(installationTypeMap.values())
       .sort((a, b) => b.totalCount - a.totalCount);
 
-    // Prepare data for pie chart
-    const pieData = installationTypes.map((type) => ({
-      name: type.category,
-      value: type.totalCount,
-      withEconomicImpact: type.withEconomicImpact,
-      percentage: (type.totalCount / deviations.length) * 100,
-    }));
+    // Prepare data for pie chart, filtering out entries that round to 0%
+    const pieData = installationTypes
+      .map((type) => ({
+        name: type.category,
+        value: type.totalCount,
+        withEconomicImpact: type.withEconomicImpact,
+        percentage: (type.totalCount / deviations.length) * 100,
+      }))
+      .filter((item) => item.percentage >= 0.5); // Remove entries that display as 0% (< 0.5% rounds to 0)
 
     return {
       chartData: pieData,

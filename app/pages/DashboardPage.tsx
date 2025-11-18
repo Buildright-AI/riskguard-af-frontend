@@ -8,6 +8,7 @@ import SubcontractorCostChart from '@/app/components/dashboard/SubcontractorCost
 import DeviationCategoryChart from '@/app/components/dashboard/DeviationCategoryChart';
 import ResolutionTimeChart from '@/app/components/dashboard/ResolutionTimeChart';
 import WorkflowBottleneckChart from '@/app/components/dashboard/WorkflowBottleneckChart';
+import WorkflowImpactBubbleChart from '@/app/components/dashboard/WorkflowImpactBubbleChart';
 import OverdueTrendsChart from '@/app/components/dashboard/OverdueTrendsChart';
 import InstallationDelayHeatmap from '@/app/components/dashboard/InstallationDelayHeatmap';
 import { DashboardFilters as DashboardFiltersType, DeviationRecord } from '@/app/types/dashboard';
@@ -18,6 +19,7 @@ import { getDashboardMetadata } from '@/app/api/getDashboardMetadata';
 import { useAuthenticatedFetch } from '@/hooks/useAuthenticatedFetch';
 import { DashboardKPIsPayload, DashboardMetadataPayload } from '@/app/types/payloads';
 import { SessionContext } from '@/app/components/contexts/SessionContext';
+import { format } from 'date-fns';
 
 const DashboardPage: React.FC = () => {
   const { getAuthToken } = useAuthenticatedFetch();
@@ -36,6 +38,10 @@ const DashboardPage: React.FC = () => {
   // Create stable filter keys for dependency tracking
   const dateRangeKey = filters.dateRange;
   const projectsKey = useMemo(() => JSON.stringify(filters.projects), [filters.projects]);
+  const customDatesKey = useMemo(
+    () => JSON.stringify([filters.customStartDate, filters.customEndDate]),
+    [filters.customStartDate, filters.customEndDate]
+  );
 
   // Check for cache invalidation URL parameter
   useEffect(() => {
@@ -120,17 +126,26 @@ const DashboardPage: React.FC = () => {
       try {
         const token = await getAuthToken();
 
-        // Calculate days from filter
-        const days = getDateRangeInDays(filters.dateRange);
-
-        // Fetch KPI data from API
-        const kpiResponse = await getDashboardKPIs(
-          {
+        // Build API options based on date range type
+        let apiOptions;
+        if (filters.dateRange === 'custom' && filters.customStartDate && filters.customEndDate) {
+          // Custom date range mode
+          apiOptions = {
+            start_date: format(filters.customStartDate, 'yyyy-MM-dd'),
+            end_date: format(filters.customEndDate, 'yyyy-MM-dd'),
+            projects: filters.projects.length > 0 ? filters.projects : undefined,
+          };
+        } else {
+          // Preset range mode
+          const days = getDateRangeInDays(filters.dateRange);
+          apiOptions = {
             days,
             projects: filters.projects.length > 0 ? filters.projects : undefined,
-          },
-          token || undefined
-        );
+          };
+        }
+
+        // Fetch KPI data from API
+        const kpiResponse = await getDashboardKPIs(apiOptions, token || undefined);
 
         // Check if request was cancelled
         if (!isActive || abortController.signal.aborted) {
@@ -144,13 +159,7 @@ const DashboardPage: React.FC = () => {
         }
 
         // Fetch deviation records for charts
-        const deviationsResponse = await getDashboardDeviations(
-          {
-            days,
-            projects: filters.projects.length > 0 ? filters.projects : undefined,
-          },
-          token || undefined
-        );
+        const deviationsResponse = await getDashboardDeviations(apiOptions, token || undefined);
 
         // Check if request was cancelled
         if (!isActive || abortController.signal.aborted) {
@@ -189,7 +198,7 @@ const DashboardPage: React.FC = () => {
       abortController.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized, dateRangeKey, projectsKey, getAuthToken]);
+  }, [initialized, dateRangeKey, projectsKey, customDatesKey, getAuthToken]);
 
   // Backend already filtered by date range and projects
   const filteredDeviations = allDeviations;
@@ -282,11 +291,22 @@ const DashboardPage: React.FC = () => {
               />
             </div>
 
-            {/* Overdue Trends - Full Width */}
-            <OverdueTrendsChart deviations={filteredDeviations} />
+            {/* Workflow Impact Analysis - Full Width */}
+            <WorkflowImpactBubbleChart
+              deviations={filteredDeviations}
+              availableWorkflows={metadata?.workflows || []}
+            />
 
-            {/* Installation Delay Heatmap - Full Width */}
-            <InstallationDelayHeatmap deviations={filteredDeviations} />
+            {/* Week-based charts (hidden for custom date ranges) */}
+            {filters.dateRange !== 'custom' && (
+              <>
+                {/* Overdue Trends - Full Width */}
+                <OverdueTrendsChart deviations={filteredDeviations} />
+
+                {/* Installation Delay Heatmap - Full Width */}
+                <InstallationDelayHeatmap deviations={filteredDeviations} />
+              </>
+            )}
           </div>
         )}
       </div>

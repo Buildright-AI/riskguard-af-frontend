@@ -87,9 +87,10 @@ export interface ResolutionTimeData {
 // Workflow Bottleneck Chart
 export interface WorkflowBottleneckData {
   workflow: string;
-  avgDaysInStage: number;
+  medianResolutionDays: number; // Median resolution time for this workflow type
+  meanResolutionDays: number;   // Mean resolution time for this workflow type
   avgHandovers: number;
-  stuckReports: number; // Reports >30 days in this stage
+  stuckReports: number; // Reports >30 days, still open
   totalReports: number;
 }
 
