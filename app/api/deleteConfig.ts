@@ -14,7 +14,7 @@ export async function deleteConfig(
     }
 
     const response = await fetchWithAuth(
-      `/user/config/${config_id}`,
+      `/api/config/${config_id}`,
       {
         method: "DELETE",
         token,

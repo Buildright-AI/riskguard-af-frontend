@@ -17,7 +17,7 @@ export async function loadConfig(
     }
 
     const response = await fetchWithAuth(
-      `/user/config/${config_id}/load`,
+      `/api/config/${config_id}/load`,
       {
         method: "GET",
         token,

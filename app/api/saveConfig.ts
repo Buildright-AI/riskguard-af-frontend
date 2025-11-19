@@ -30,7 +30,7 @@ export async function saveConfig(
     }
 
     const response = await fetchWithAuth(
-      `/user/config/${backend_config.id}`,
+      `/api/config/${backend_config.id}`,
       {
         method: "POST",
         body: JSON.stringify({

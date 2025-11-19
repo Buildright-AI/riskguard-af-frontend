@@ -33,11 +33,12 @@ Frontend → Backend via REST + WebSocket
 ```
 /init/user                      POST   - Initialize user, load default config
 /init/tree/{conv_id}            POST   - Create new conversation tree
-/user/config                    GET    - Get current user config (in-memory)
-/user/config/list               GET    - List all saved configs
-/user/config/new                POST   - Create new config (returns ID)
-/user/config/{id}               POST   - Save config to Weaviate
-/user/config/{id}/load          GET    - Load config from Weaviate
+/api/config                     GET    - Get current user config (in-memory)
+/api/config/models              GET    - Get available AI models
+/api/config/list                GET    - List all saved configs
+/api/config/new                 POST   - Create new config (returns ID)
+/api/config/{id}                POST   - Save config to Weaviate
+/api/config/{id}/load           GET    - Load config from Weaviate
 /tree/config/{conv_id}          GET    - Get conversation-specific config
 /ws/query                       WS     - Query processing websocket
 /api/dashboard/kpis             GET    - Dashboard KPIs (filtered)
@@ -68,9 +69,9 @@ Frontend → Backend via REST + WebSocket
 ### Config Creation Flow
 ```
 Frontend: SessionContext.handleCreateConfig()
-  ├─> POST /user/config/new (creates config object)
-  └─> POST /user/config/{id} (persists to Weaviate)
-      └─> GET /user/config/list (refresh list)
+  ├─> POST /api/config/new (creates config object)
+  └─> POST /api/config/{id} (persists to Weaviate)
+      └─> GET /api/config/list (refresh list)
 ```
 
 ### New Conversation Flow
@@ -106,9 +107,13 @@ app/pages/
 └── DashboardPage.tsx           # Analytics dashboard
 
 app/api/
-├── createConfig.ts             # POST /user/config/new
-├── saveConfig.ts               # POST /user/config/{id}
-├── getConfigList.ts            # GET /user/config/list
+├── getModels.ts                # GET /api/config/models
+├── getConfig.ts                # GET /api/config
+├── createConfig.ts             # POST /api/config/new
+├── saveConfig.ts               # POST /api/config/{id}
+├── loadConfig.ts               # GET /api/config/{id}/load
+├── deleteConfig.ts             # DELETE /api/config/{id}
+├── getConfigList.ts            # GET /api/config/list
 ├── initializeTree.ts           # POST /init/tree/{id}
 └── getDashboard*.ts            # Dashboard API endpoints
 
@@ -125,7 +130,7 @@ docs/
 ```
 elysia/api/routes/
 ├── init.py                     # User + tree initialization
-├── user_config.py              # Config CRUD operations
+├── user_config.py              # Config CRUD operations (mounted at /api/config)
 ├── tree_config.py              # Per-conversation configs
 ├── query.py                    # WebSocket query handler
 ├── processor.py                # WebSocket response streaming

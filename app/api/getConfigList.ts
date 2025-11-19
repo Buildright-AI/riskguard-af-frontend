@@ -6,7 +6,7 @@ export async function getConfigList(
 ): Promise<ConfigListPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetchWithAuth(`/user/config/list`, {
+    const response = await fetchWithAuth(`/api/config/list`, {
       method: "GET",
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",

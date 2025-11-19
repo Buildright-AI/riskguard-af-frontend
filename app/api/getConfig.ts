@@ -6,7 +6,7 @@ export async function getConfig(
 ): Promise<ConfigPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetchWithAuth(`/user/config`, {
+    const response = await fetchWithAuth(`/api/config`, {
       method: "GET",
       token,
     });
