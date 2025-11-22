@@ -102,15 +102,15 @@ export default function ModelsSection({
             <div className="w-full">
               <p className="text-sm text-secondary mb-2">Provider</p>
               <SettingCombobox
-                value={currentUserConfig?.settings.BASE_PROVIDER || ""}
+                value={currentUserConfig?.agent_config.BASE_PROVIDER || ""}
                 values={modelsData ? Object.keys(modelsData) : []}
                 onChange={(value) => {
                   // Update both provider and clear model in a single state update
                   if (currentUserConfig) {
                     onUpdateConfig({
                       ...currentUserConfig,
-                      settings: {
-                        ...currentUserConfig.settings,
+                      agent_config: {
+                        ...currentUserConfig.agent_config,
                         BASE_PROVIDER: value,
                         BASE_MODEL: "", // Clear base model when provider changes
                       },
@@ -125,23 +125,23 @@ export default function ModelsSection({
                 isInvalid={!baseProviderValid}
               />
             </div>
-            {currentUserConfig?.settings.BASE_PROVIDER && (
+            {currentUserConfig?.agent_config.BASE_PROVIDER && (
               <div className="w-full">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                   <p className="text-sm text-secondary">Model</p>
                   <ModelBadges
                     modelsData={modelsData}
-                    provider={currentUserConfig?.settings.BASE_PROVIDER || ""}
-                    model={currentUserConfig?.settings.BASE_MODEL || ""}
+                    provider={currentUserConfig?.agent_config.BASE_PROVIDER || ""}
+                    model={currentUserConfig?.agent_config.BASE_MODEL || ""}
                   />
                 </div>
                 <SettingCombobox
-                  value={currentUserConfig?.settings.BASE_MODEL || ""}
+                  value={currentUserConfig?.agent_config.BASE_MODEL || ""}
                   values={
-                    modelsData && currentUserConfig?.settings.BASE_PROVIDER
+                    modelsData && currentUserConfig?.agent_config.BASE_PROVIDER
                       ? Object.keys(
                           modelsData[
-                            currentUserConfig.settings.BASE_PROVIDER
+                            currentUserConfig.agent_config.BASE_PROVIDER
                           ] || {}
                         )
                       : []
@@ -177,15 +177,15 @@ export default function ModelsSection({
             <div className="w-full">
               <p className="text-sm text-secondary mb-2">Provider</p>
               <SettingCombobox
-                value={currentUserConfig?.settings.COMPLEX_PROVIDER || ""}
+                value={currentUserConfig?.agent_config.COMPLEX_PROVIDER || ""}
                 values={modelsData ? Object.keys(modelsData) : []}
                 onChange={(value) => {
                   // Update both provider and clear model in a single state update
                   if (currentUserConfig) {
                     onUpdateConfig({
                       ...currentUserConfig,
-                      settings: {
-                        ...currentUserConfig.settings,
+                      agent_config: {
+                        ...currentUserConfig.agent_config,
                         COMPLEX_PROVIDER: value,
                         COMPLEX_MODEL: "", // Clear complex model when provider changes
                       },
@@ -200,25 +200,25 @@ export default function ModelsSection({
                 isInvalid={!complexProviderValid}
               />
             </div>
-            {currentUserConfig?.settings.COMPLEX_PROVIDER && (
+            {currentUserConfig?.agent_config.COMPLEX_PROVIDER && (
               <div className="w-full">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                   <p className="text-sm text-secondary">Model</p>
                   <ModelBadges
                     modelsData={modelsData}
                     provider={
-                      currentUserConfig?.settings.COMPLEX_PROVIDER || ""
+                      currentUserConfig?.agent_config.COMPLEX_PROVIDER || ""
                     }
-                    model={currentUserConfig?.settings.COMPLEX_MODEL || ""}
+                    model={currentUserConfig?.agent_config.COMPLEX_MODEL || ""}
                   />
                 </div>
                 <SettingCombobox
-                  value={currentUserConfig?.settings.COMPLEX_MODEL || ""}
+                  value={currentUserConfig?.agent_config.COMPLEX_MODEL || ""}
                   values={
-                    modelsData && currentUserConfig?.settings.COMPLEX_PROVIDER
+                    modelsData && currentUserConfig?.agent_config.COMPLEX_PROVIDER
                       ? Object.keys(
                           modelsData[
-                            currentUserConfig.settings.COMPLEX_PROVIDER
+                            currentUserConfig.agent_config.COMPLEX_PROVIDER
                           ] || {}
                         )
                       : []
@@ -244,7 +244,7 @@ export default function ModelsSection({
           />
           <SettingInput
             isProtected={false}
-            value={currentUserConfig?.settings.MODEL_API_BASE || ""}
+            value={currentUserConfig?.agent_config.MODEL_API_BASE || ""}
             onChange={(value) => {
               onUpdateSettings("MODEL_API_BASE", value);
             }}

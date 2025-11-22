@@ -1,7 +1,7 @@
 "use client";
 
 import { Collection } from "@/app/types/objects";
-import { getWebsocketHost } from "../host";
+import { getWebsocketHost } from "@/lib/api/client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ProcessingSocketPayload } from "@/app/types/socketPayloads";
 import { CollectionContext } from "./CollectionContext";

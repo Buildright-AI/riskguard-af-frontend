@@ -11,7 +11,7 @@ Elysia is a conversational AI system with a Next.js frontend and FastAPI backend
 ```
 - **Framework**: Next.js 14 (App Router)
 - **Auth**: Clerk
-- **State**: React Context (SessionContext, ConversationContext)
+- **State**: React Context (11 providers)
 - **API Client**: `lib/api/client.ts`
 
 ### Backend
@@ -39,6 +39,7 @@ Frontend → Backend via REST + WebSocket
 /api/config/new                 POST   - Create new config (returns ID)
 /api/config/{id}                POST   - Save config to Weaviate
 /api/config/{id}/load           GET    - Load config from Weaviate
+/api/config/{id}                DELETE - Delete config from Weaviate
 /tree/config/{conv_id}          GET    - Get conversation-specific config
 /ws/query                       WS     - Query processing websocket
 /api/dashboard/kpis             GET    - Dashboard KPIs (filtered)
@@ -95,17 +96,39 @@ async def get_default_config():
 
 ## Important Files
 
-### Frontend
+### Frontend Structure
+
+#### React Contexts (11 providers)
 ```
 app/components/contexts/
-├── SessionContext.tsx          # User config management
-└── ConversationContext.tsx     # Conversation/tree management
+├── SessionContext.tsx          # User config management, API key handling
+├── ConversationContext.tsx     # Conversation/tree management, message history
+├── SocketContext.tsx           # WebSocket connection management
+├── ChatContext.tsx             # Active conversation state
+├── ProcessingContext.tsx       # Query processing state
+├── RouterContext.tsx           # Client-side routing (page navigation)
+├── DisplayContext.tsx          # UI display preferences
+├── ThemeContext.tsx            # Theme management (light/dark)
+├── CollectionContext.tsx       # Weaviate collection management
+├── EvaluationContext.tsx       # Model evaluation state
+└── ToastContext.tsx            # Toast notification system
+```
 
+#### Pages (8 routes)
+```
 app/pages/
-├── ChatPage.tsx                # Main chat interface
-├── SettingsPage.tsx            # Config editor
-└── DashboardPage.tsx           # Analytics dashboard
+├── ChatPage.tsx                # Main chat interface with decision tree visualization
+├── DashboardPage.tsx           # Analytics dashboard (cost/delay analysis)
+├── SettingsPage.tsx            # Config editor (models, API keys, agent settings)
+├── DisplayPage.tsx             # Conversation display/review
+├── CollectionPage.tsx          # Weaviate collection browser
+├── DataPage.tsx                # Data exploration interface
+├── EvalPage.tsx                # Model evaluation tools
+└── FeedbackPage.tsx            # User feedback collection
+```
 
+#### API Clients
+```
 app/api/
 ├── getModels.ts                # GET /api/config/models
 ├── getConfig.ts                # GET /api/config
@@ -115,15 +138,44 @@ app/api/
 ├── deleteConfig.ts             # DELETE /api/config/{id}
 ├── getConfigList.ts            # GET /api/config/list
 ├── initializeTree.ts           # POST /init/tree/{id}
-└── getDashboard*.ts            # Dashboard API endpoints
+├── getDashboardKPIs.ts         # GET /api/dashboard/kpis
+├── getDashboardDeviations.ts  # GET /api/dashboard/deviations
+├── getDashboardMetadata.ts    # GET /api/dashboard/metadata
+└── [20+ more endpoints]
+```
 
+#### Type System
+```
 app/types/
-├── objects.ts                  # BackendConfig, FrontendConfig
-├── payloads.ts                 # API response types
-└── dashboard.ts                # Dashboard types
+├── objects.ts                  # Core types (BackendConfig, FrontendConfig, User, etc.)
+├── payloads.ts                 # API request/response types
+└── dashboard.ts                # Dashboard-specific types (KPIs, deviations, filters)
+
+Type Hierarchy:
+- objects.ts: Foundation types shared across app
+- payloads.ts: Extends objects.ts with API-specific shapes
+- dashboard.ts: Domain-specific types for analytics
+```
+
+#### Other Key Files
+```
+app/components/
+├── layouts/AuthenticatedLayout.tsx  # Clerk auth wrapper for all pages
+├── chat/                            # Chat UI components
+│   ├── components/                  # Shared chat components
+│   ├── displays/                    # Message display types
+│   └── nodes/                       # Flow node components (@xyflow/react)
+├── dashboard/                       # Dashboard chart components (8 charts)
+├── configuration/                   # Config management UI
+└── navigation/                      # Sidebar, navigation components
+
+lib/
+├── api/client.ts                    # Base API client with auth
+├── constants.ts                     # App-wide constants
+└── utils.ts                         # Utility functions
 
 docs/
-└── DASHBOARD_ARCHITECTURE.md   # Dashboard feature architecture
+└── DASHBOARD_ARCHITECTURE.md        # Detailed dashboard architecture
 ```
 
 ### Backend
@@ -162,20 +214,6 @@ WCD_API_KEY=...                 # Weaviate API key
 CLIENT_TIMEOUT=3
 TREE_TIMEOUT=10
 ```
-
-## Common Issues & Fixes
-
-### Issue: New chats use old config
-**Cause**: Backend `/init/tree` wasn't loading default config
-**Fix**: Added `get_default_config()` call before tree creation (init.py:171-189)
-
-### Issue: Created config doesn't appear in sidebar
-**Cause**: Frontend wasn't persisting config to Weaviate after creation
-**Fix**: Added auto-save step in `SessionContext.handleCreateConfig()` (SessionContext.tsx:319-332)
-
-### Issue: Config ID is null when saving
-**Cause**: Trying to save unpersisted config
-**Fix**: Added null check in `saveConfig()` (saveConfig.ts:22-30)
 
 ## Development Commands
 
@@ -218,8 +256,10 @@ Each conversation is a tree of nodes representing:
 - Search operations
 - Results
 
+Visualized using @xyflow/react with dagre layout.
+
 ### Collections
-Vector databases that agents can query (e.g., document collections in Weaviate)
+Vector databases that agents can query (e.g., document collections in Weaviate). Managed via CollectionContext and CollectionPage.
 
 ### Config Persistence
 - **In-memory**: UserManager holds current config
@@ -227,20 +267,52 @@ Vector databases that agents can query (e.g., document collections in Weaviate)
 - **Snapshot**: Each conversation stores its config independently
 
 ### Dashboard Analytics
-Analytics dashboard for cost and delay analysis across projects:
-- **KPIs**: Total cost, avg resolution time, overdue reports, cost trends
-- **Cost Drivers**: Subcontractor costs, deviation categories
-- **Delay Drivers**: Resolution times, workflow bottlenecks, overdue trends, delay heatmaps
-- **Data Source**: Weaviate collections ending with `Reports` (e.g., `EnsjoveienReports`)
-- **Caching**: 2-hour TTL, project-scoped, thread-safe
-- **Filtering**: By date range (7/30/90/180 days) and projects
-
-See `docs/DASHBOARD_ARCHITECTURE.md` for detailed architecture, data flow, and implementation details.
+Analytics dashboard for cost and delay analysis across projects. See `docs/DASHBOARD_ARCHITECTURE.md` for:
+- Detailed architecture and data flow
+- KPI calculations and aggregations
+- Caching strategy (2-hour TTL, project-scoped)
+- Filter system (date ranges, projects)
+- Chart components and their data sources
 
 ## Authentication
-Clerk JWT tokens in Authorization header:
+
+### Flow
 ```
-Authorization: Bearer eyJhbGc...
+1. User signs in via Clerk (browser)
+2. Clerk issues JWT token
+3. Frontend includes token in all API requests: Authorization: Bearer <token>
+4. Backend ClerkAuthMiddleware validates token using PEM key
+5. User ID extracted from token, used for data isolation
 ```
 
-Backend validates via Clerk PEM key (middleware: `ClerkAuthMiddleware`)
+### Implementation
+- Frontend: `@clerk/nextjs` with `AuthenticatedLayout` wrapper
+- Backend: `ClerkAuthMiddleware` in FastAPI
+- All protected routes require valid Clerk JWT
+
+### Admin Access Control
+
+Admin functionality is controlled via Clerk organization metadata:
+
+**Admin Check Logic** (`lib/utils/checkIsAdmin.ts`):
+```typescript
+organization.publicMetadata.admin === true
+```
+
+**Admin-Only Pages** (`lib/constants/adminPages.ts`):
+- `data` - Data exploration interface
+- `collection` - Weaviate collection browser
+- `settings` - Config editor
+- `eval` - Model evaluation tools
+- `feedback` - User feedback collection
+- `elysia` - System admin page
+- `display` - Conversation display/review
+
+**Public Pages** (no admin required):
+- `dashboard` - Analytics dashboard
+- `chat` - Main chat interface
+
+**Enforcement**:
+- Next.js middleware (`middleware.ts`) checks organization metadata before allowing page access
+- Non-admin users attempting to access admin pages are redirected to chat page
+- Client-side routing (`RouterContext`) also checks admin status for UI control

@@ -93,8 +93,8 @@ export function useTreeConfigState(
     }
   };
 
-  // Update settings fields
-  const updateSettingsFields = (
+  // Update agent config fields
+  const updateAgentConfigFields = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     keyOrUpdates: string | Record<string, any>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,8 +105,8 @@ export function useTreeConfigState(
         // Single key-value update
         setCurrentConfig({
           ...currentConfig,
-          settings: {
-            ...currentConfig.settings,
+          agent_config: {
+            ...currentConfig.agent_config,
             [keyOrUpdates]: value,
           },
         });
@@ -114,8 +114,8 @@ export function useTreeConfigState(
         // Multiple key-value updates
         setCurrentConfig({
           ...currentConfig,
-          settings: {
-            ...currentConfig.settings,
+          agent_config: {
+            ...currentConfig.agent_config,
             ...keyOrUpdates,
           },
         });
@@ -148,7 +148,7 @@ export function useTreeConfigState(
     resetConfig,
     cancelConfig,
     updateFields,
-    updateSettingsFields,
+    updateAgentConfigFields,
     fetchTreeConfig,
 
     // State setters (for complex updates)

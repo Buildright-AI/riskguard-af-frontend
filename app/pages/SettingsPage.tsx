@@ -10,7 +10,6 @@ import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 // Custom hooks
 import { useConfigState } from "../components/configuration/hooks/useConfigState";
 import { useConfigValidation } from "../components/configuration/hooks/useConfigValidation";
-import { useApiKeyManagement } from "../components/configuration/hooks/useApiKeyManagement";
 
 // Components
 import ConfigSidebar, {
@@ -18,18 +17,10 @@ import ConfigSidebar, {
 } from "../components/configuration/ConfigSidebar";
 import ConfigNameEditor from "../components/configuration/ConfigNameEditor";
 import ConfigActions from "../components/configuration/ConfigActions";
-import WeaviateSection from "../components/configuration/sections/WeaviateSection";
-import StorageSection from "../components/configuration/sections/StorageSection";
 import AgentSection from "../components/configuration/sections/AgentSection";
 import ModelsSection from "../components/configuration/sections/ModelsSection";
-import ApiKeysSection from "../components/configuration/sections/ApiKeysSection";
-import EnvImportModal from "../components/configuration/EnvImportModal";
 
 // Utilities
-import {
-  shouldHighlightUseSameCluster,
-  copyWeaviateValuesToStorage,
-} from "../components/configuration/utils/configUtils";
 import { ToastContext } from "../components/contexts/ToastContext";
 
 /**
@@ -75,12 +66,10 @@ export default function Home() {
     nameExists,
     nameIsEmpty,
     setCurrentUserConfig,
-    setCurrentFrontendConfig,
     setChangedConfig,
     setEditName,
     updateFields,
-    updateFrontendFields,
-    updateSettingsFields,
+    updateAgentConfigFields,
     cancelConfig,
   } = useConfigState(userConfig, configIDs);
 
@@ -95,32 +84,12 @@ export default function Home() {
   // Configuration validation
   const {
     currentValidation,
-    getMissingApiKeys,
-    getStorageIssues,
     isConfigValid,
-    getWeaviateIssues,
     getModelsIssues,
-    getApiKeysIssues,
-  } = useConfigValidation(currentUserConfig, currentFrontendConfig, modelsData);
-
-  // API key management
-  const {
-    addAPIKey,
-    addAllMissingAPIKeys,
-    removeAPIKey,
-    updateAPIKeys,
-    parseEnvContent,
-  } = useApiKeyManagement(
-    currentUserConfig,
-    setCurrentUserConfig,
-    setChangedConfig,
-    getMissingApiKeys
-  );
+  } = useConfigValidation(currentUserConfig);
 
   // Modal and UI state
   const [saveAsDefault, setSaveAsDefault] = useState<boolean>(true);
-  const [isEnvModalOpen, setIsEnvModalOpen] = useState<boolean>(false);
-  const [envContent, setEnvContent] = useState<string>("");
 
   // Fetch models data on component mount
   useEffect(() => {
@@ -177,18 +146,6 @@ export default function Home() {
     setEditName(false);
   };
 
-  // Helper function to handle storage cluster copying
-  const copyWeaviateValuesToConfigStorage = () => {
-    const updatedConfig = copyWeaviateValuesToStorage(
-      currentUserConfig,
-      currentFrontendConfig
-    );
-    if (updatedConfig) {
-      setCurrentFrontendConfig(updatedConfig);
-      setChangedConfig(true);
-    }
-  };
-
   // Helper function to create a new config
   const handleCreateConfigWithUniqueName = async () => {
     if (changedConfig) {
@@ -207,21 +164,6 @@ export default function Home() {
     setChangedConfig(false);
     setEditName(false);
   };
-
-  // Helper function to handle environment file import
-  const handleEnvSubmit = () => {
-    if (envContent.trim()) {
-      parseEnvContent(envContent);
-      setEnvContent("");
-      setIsEnvModalOpen(false);
-    }
-  };
-
-  // Calculate helper values
-  const shouldHighlight = shouldHighlightUseSameCluster(
-    currentUserConfig,
-    currentFrontendConfig
-  );
 
   useEffect(() => {
     updateUnsavedChanges(changedConfig);
@@ -314,31 +256,11 @@ export default function Home() {
                 }`}
               >
                 <div className="flex flex-col gap-2">
-                  {/* Weaviate Cluster Configuration */}
-                  <WeaviateSection
-                    currentUserConfig={currentUserConfig}
-                    currentFrontendConfig={currentFrontendConfig}
-                    weaviateIssues={getWeaviateIssues()}
-                    wcdUrlValid={currentValidation.wcd_url}
-                    wcdApiKeyValid={currentValidation.wcd_api_key}
-                    onUpdateSettings={updateSettingsFields}
-                    onUpdateFrontend={updateFrontendFields}
-                  />
-
-                  {/* Elysia Storage Configuration */}
-                  <StorageSection
-                    currentFrontendConfig={currentFrontendConfig}
-                    storageIssues={getStorageIssues}
-                    shouldHighlightUseSameCluster={shouldHighlight}
-                    onUpdateFrontend={updateFrontendFields}
-                    onCopyWeaviateValues={copyWeaviateValuesToConfigStorage}
-                  />
-
                   {/* Agent Configuration */}
                   <AgentSection
                     currentUserConfig={currentUserConfig}
                     onUpdateFields={updateFields}
-                    onUpdateSettings={updateSettingsFields}
+                    onUpdateSettings={updateAgentConfigFields}
                   />
 
                   {/* Models Configuration */}
@@ -351,20 +273,9 @@ export default function Home() {
                     baseModelValid={currentValidation.base_model}
                     complexProviderValid={currentValidation.complex_provider}
                     complexModelValid={currentValidation.complex_model}
-                    onUpdateSettings={updateSettingsFields}
+                    onUpdateSettings={updateAgentConfigFields}
                     onUpdateConfig={setCurrentUserConfig}
                     setChangedConfig={setChangedConfig}
-                  />
-
-                  {/* API Keys Configuration */}
-                  <ApiKeysSection
-                    currentUserConfig={currentUserConfig}
-                    apiKeysIssues={getApiKeysIssues()}
-                    onAddAPIKey={addAPIKey}
-                    onAddAllMissingAPIKeys={addAllMissingAPIKeys}
-                    onUpdateAPIKeys={updateAPIKeys}
-                    onRemoveAPIKey={removeAPIKey}
-                    onOpenEnvModal={() => setIsEnvModalOpen(true)}
                   />
                 </div>
               </div>
@@ -376,19 +287,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* Environment Import Modal */}
-      <EnvImportModal
-        isOpen={isEnvModalOpen}
-        envContent={envContent}
-        onOpenChange={setIsEnvModalOpen}
-        onEnvContentChange={setEnvContent}
-        onSubmit={handleEnvSubmit}
-        onCancel={() => {
-          setIsEnvModalOpen(false);
-          setEnvContent("");
-        }}
-      />
     </div>
   );
 }
