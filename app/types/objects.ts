@@ -115,39 +115,32 @@ export type BackendConfig = {
   end_goal: string;
   branch_initialisation: string;
   id: string | null;
-  settings: Settings;
+  agent_config: AgentConfig;
 };
 
 export type FrontendConfig = {
-  save_trees_to_weaviate: boolean;
-  save_configs_to_weaviate: boolean;
   tree_timeout: number;
   client_timeout: number;
-  save_location_weaviate_is_local: boolean;
-  save_location_wcd_url: string;
-  save_location_wcd_api_key: string;
-  save_location_local_weaviate_grpc_port: number;
-  save_location_local_weaviate_port: number;
+  // Storage cluster credentials removed - managed globally via system settings
+  // Save flags removed - conversations and configs are always saved (core SaaS functionality)
 };
 
-export type Settings = {
-  API_KEYS: {
-    [key: string]: string;
-  };
-  BASE_MODEL: string;
-  BASE_PROVIDER: string;
-  COMPLEX_MODEL: string;
-  COMPLEX_PROVIDER: string;
-  LOGGING_LEVEL: string;
-  LOGGING_LEVEL_INT: number;
+export type AgentConfig = {
+  BASE_MODEL: string | null;
+  BASE_PROVIDER: string | null;
+  COMPLEX_MODEL: string | null;
+  COMPLEX_PROVIDER: string | null;
+  BASE_MAX_TOKENS: number | null;
+  BASE_TEMPERATURE: number | null;
+  COMPLEX_MAX_TOKENS: number | null;
+  COMPLEX_TEMPERATURE: number | null;
   MODEL_API_BASE: string | null;
-  SETTINGS_ID: string;
   USE_FEEDBACK: boolean;
-  WCD_API_KEY: string;
-  WCD_URL: string;
-  WEAVIATE_IS_LOCAL: boolean;
-  LOCAL_WEAVIATE_GRPC_PORT: number;
-  LOCAL_WEAVIATE_PORT: number;
+  BASE_USE_REASONING: boolean;
+  COMPLEX_USE_REASONING: boolean;
+  PREPROCESSING_CARDINALITY_THRESHOLD: number;
+  PREPROCESSING_MAX_CONCURRENT: number;
+  PREPROCESSING_MIN_SAMPLE_SIZE: number;
 };
 
 // For PATCHing collection metadata (matches backend schema)

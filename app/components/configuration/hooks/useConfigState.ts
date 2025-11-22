@@ -124,7 +124,7 @@ export function useConfigState(
     }
   };
 
-  const updateSettingsFields = (
+  const updateAgentConfigFields = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     keyOrUpdates: string | Record<string, any>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,8 +135,8 @@ export function useConfigState(
         // Single key-value update
         setCurrentUserConfig({
           ...currentUserConfig,
-          settings: {
-            ...currentUserConfig.settings,
+          agent_config: {
+            ...currentUserConfig.agent_config,
             [keyOrUpdates]: value,
           },
         });
@@ -144,8 +144,8 @@ export function useConfigState(
         // Multiple key-value updates
         setCurrentUserConfig({
           ...currentUserConfig,
-          settings: {
-            ...currentUserConfig.settings,
+          agent_config: {
+            ...currentUserConfig.agent_config,
             ...keyOrUpdates,
           },
         });
@@ -184,7 +184,7 @@ export function useConfigState(
     // Update functions
     updateFields,
     updateFrontendFields,
-    updateSettingsFields,
+    updateAgentConfigFields,
     cancelConfig,
   };
 }

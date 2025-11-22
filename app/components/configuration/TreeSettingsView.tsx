@@ -39,7 +39,7 @@ export default function TreeSettingsView({
     resetConfig,
     cancelConfig,
     updateFields,
-    updateSettingsFields,
+    updateAgentConfigFields,
     setCurrentConfig,
   } = useTreeConfigState(conversation_id);
 
@@ -50,11 +50,7 @@ export default function TreeSettingsView({
   const [loadingModels, setLoadingModels] = useState<boolean>(true);
 
   // Configuration validation using shared hook
-  const { getAllModelsIssues } = useConfigValidation(
-    currentConfig,
-    null, // No frontend config for tree settings
-    modelsData
-  );
+  const { getModelsIssues } = useConfigValidation(currentConfig);
 
   // Fetch models data on component mount
   useEffect(() => {
@@ -128,7 +124,7 @@ export default function TreeSettingsView({
           <AgentSection
             currentUserConfig={currentConfig}
             onUpdateFields={updateFields}
-            onUpdateSettings={updateSettingsFields}
+            onUpdateSettings={updateAgentConfigFields}
             title="Agent Configuration"
             showDocumentation={false}
             showFeedbackSetting={false}
@@ -139,8 +135,8 @@ export default function TreeSettingsView({
             currentUserConfig={currentConfig}
             modelsData={modelsData}
             loadingModels={loadingModels}
-            modelsIssues={getAllModelsIssues()}
-            onUpdateSettings={updateSettingsFields}
+            modelsIssues={getModelsIssues()}
+            onUpdateSettings={updateAgentConfigFields}
             onUpdateConfig={setCurrentConfig}
             setChangedConfig={() => {}} // Changes are tracked by the tree state hook
             showDocumentation={false}

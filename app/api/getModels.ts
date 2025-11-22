@@ -4,7 +4,7 @@ import { fetchWithAuth } from "@/lib/api/client";
 export async function getModels(token?: string): Promise<ModelsPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetchWithAuth(`/user/config/models`, {
+    const response = await fetchWithAuth(`/api/config/models`, {
       method: "GET",
       token,
     });

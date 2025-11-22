@@ -5,13 +5,23 @@
 
 /**
  * Get the API base URL from environment variable
- * Falls back to empty string for static builds
  */
 export function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_IS_STATIC === "true") {
-    return "";
-  }
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+}
+
+/**
+ * Get WebSocket host URL
+ * Automatically determines protocol and host based on environment
+ */
+export function getWebsocketHost(): string {
+  const defaultUrl = process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "https://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || defaultUrl;
+  const url = new URL(apiUrl);
+  const protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${url.host}/ws/`;
 }
 
 /**

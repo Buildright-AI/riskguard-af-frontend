@@ -2,7 +2,7 @@
 
 import { createContext, useEffect, useState } from "react";
 import { Message } from "@/app/types/chat";
-import { getWebsocketHost } from "../host";
+import { getWebsocketHost } from "@/lib/api/client";
 import { useContext, useRef } from "react";
 import { ConversationContext } from "./ConversationContext";
 import { ToastContext } from "./ToastContext";

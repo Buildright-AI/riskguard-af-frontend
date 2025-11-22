@@ -6,7 +6,7 @@ export async function createConfig(
 ): Promise<ConfigPayload> {
   const startTime = performance.now();
   try {
-    const response = await fetchWithAuth(`/user/config/new`, {
+    const response = await fetchWithAuth(`/api/config/new`, {
       method: "POST",
       token,
     });
